@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from newbieUser import NewbieUser
 
@@ -5,6 +6,9 @@ from newbieUser import NewbieUser
 class SQlite():
     def __init__(self, filename: str):
         self.filename = filename
+        if not os.path.isfile(self.filename):
+            print("La base de données est manquante -> python init_db.py")
+            exit()
 
     def openConn(self):
         self.conn = sqlite3.connect(self.filename)
