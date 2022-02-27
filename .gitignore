@@ -1,0 +1,6 @@
+__pycache__
+.*
+config.json
+*.db
+
+!.gitignore

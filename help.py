@@ -6,7 +6,7 @@ from config import config
 
 categories = {
     'description': {
-        'newbie': 'Commandes liées à NewbieContest (pour l\'instant rien ne marche, c\'est pour se donner une idée)',
+        'newbie': 'Commandes liées à NewbieContest',
         'autres': 'Autres commandes'
     },
     'displayName': {
@@ -18,8 +18,8 @@ categories = {
 commandsList = {
     'description': {
         'newbie': {
-            'nrank': 'Affiche son rang sur le newbie contest (pas implémenté)',
-            'npseudo': 'Mets-à-jour le pseudo NC associé à ton compte discord (pas implémenté)',
+            'top': 'Affiche le classement NewbieContest',
+            'ln': 'Mets-à-jour le pseudo NC associé à ton compte discord',
         },
         'autres': {
             'bonjour': 'Hello !'
@@ -27,7 +27,7 @@ commandsList = {
     },
     'usage': {
         'newbie': {
-            'npseudo': '<ton pseudo newbie contest>',
+            'ln': '<ton pseudo newbie contest>',
         },
         'autres': {
             
@@ -40,7 +40,13 @@ class Help(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def get(context, category, command):
+    @commands.Cog.listener()
+    async def on_ready(self):
+        global avatar_url
+        avatar_url = self.bot.user.avatar.url
+
+    @staticmethod
+    def get(category, command):
         PREFIX = config.getPrefix()
         title = "Commande %s%s" % (PREFIX, command)
 
@@ -51,7 +57,7 @@ class Help(commands.Cog):
         )
         embed.set_author(
             name = "Aide",
-            icon_url = ""
+            icon_url = avatar_url
         )
 
         if command in commandsList['usage'][category]:
@@ -79,7 +85,7 @@ class Help(commands.Cog):
             for category in categories['description']:
                 embed.set_author(
                     name = "Aide de %s" % (self.bot.user.display_name),
-                    icon_url = ""
+                    icon_url = avatar_url
                 )
                 embed.title = 'Liste des catégories de commandes'
                 embed.add_field(
@@ -92,7 +98,7 @@ class Help(commands.Cog):
                 category = query
                 embed.set_author(
                     name = "Aide de %s" % (categories['displayName'][category]),
-                    icon_url = ""
+                    icon_url = avatar_url
                 )
                 embed.title = 'Liste des commandes de %s' % categories['displayName'][category]
                 for command in commandsList['description'][category]:
