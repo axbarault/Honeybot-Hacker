@@ -18,14 +18,16 @@ class Newbie(commands.Cog):
             return await context.send(embed=Help.get("newbie", "ln"))
 
         self.id = login
-        if isinstance(self.id, str):
+        if self.id.isdecimal():
+            self.id = int(self.id)
+        else:
             r = await self.bot.loop.run_in_executor(None, lambda: requests.get("https://www.newbiecontest.org/index.php?page=classementdynamique&member=%s&nosmiley=1" % self.id))
 
-            p_id = re.compile("tCell tCellHL.*id=(\d+)")
+            p_id = re.compile("Recherche de.*id=(\d+)")
             try:
                 self.id = int(p_id.findall(r.text)[0])
             except:
-                raise Exception("introuvable")
+                await context.send("Compte NewbieContest %s introuvable" % self.id)
 
         r = await self.bot.loop.run_in_executor(None, lambda: requests.get("https://www.newbiecontest.org/index.php?page=info_membre&id=%d" % self.id))
 
@@ -38,7 +40,7 @@ class Newbie(commands.Cog):
             self.points = int(p_points.findall(r.text)[0])
             self.position = int(p_position.findall(r.text)[0])
         except:
-            raise Exception("introuvable")
+            await context.send("Compte NewbieContest %s introuvable" % self.id)
 
         newbieUser = NewbieUser(context.author.id, self.id, self.login, self.points, self.position)
         db.updateNewbie(newbieUser)
