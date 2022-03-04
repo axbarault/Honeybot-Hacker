@@ -3,7 +3,8 @@ from discord.ext import commands, tasks
 
 import re
 import requests
-from time import time, ctime
+from time import time
+from datetime import datetime
 from asyncio import sleep
 from sqlite import sqlite as db
 from newbieUser import NewbieUser
@@ -83,11 +84,11 @@ class Newbie(commands.Cog):
             color=0xAA0000
         )
         embed.set_author(name="Classement NewbieContest de %s" % guild.name, icon_url="https://www.newbiecontest.org/images/logo.png")
-        embed.set_footer(text="Dernière mise à jour : %s" % ctime(self.lastDBUpdate))
+        embed.set_footer(text="Dernière mise à jour : %s" % datetime.fromtimestamp(int(self.lastDBUpdate)))
 
         await context.send(embed=embed)
 
-    @tasks.loop(hours=24)
+    @tasks.loop(minutes=817)
     async def printer(self):
         newbieUsers = db.getNewbieUsers()
         for newbieUser in newbieUsers:
