@@ -30,7 +30,7 @@ class Newbie(commands.Cog):
 
         r = await self.bot.loop.run_in_executor(None, lambda: requests.get("https://www.newbiecontest.org/index.php?page=info_membre&id=%d" % id))
 
-        p_login = re.compile("Informations sur.*>\s*(.+)</span></a>")
+        p_login = re.compile("Informations sur.*>\s*(.+?)(?:&nbsp|</span></a>)")
         p_points = re.compile("Points :.*>\s*(\d+)")
         p_kingdom = re.compile("Royaume :.*>\s*([\w\s]+)\s*</p>")
         p_position = re.compile("Position :.*>\s*(\d+)")
