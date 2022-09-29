@@ -73,7 +73,7 @@ class Newbie(commands.Cog):
         for newbieUser in newbieUsers:
             pos += 1
             text += "%s ─ %s ─ [%s](%s) ─ %d\n" % (str(pos) if pos > 3 else medals[pos],
-                                                   guild.get_member(newbieUser.discord_id).mention,
+                                                   "<@" + str(newbieUser.discord_id) + ">",
                                                    newbieUser.login,
                                                    "https://www.newbiecontest.org/index.php?page=info_membre&id=%d" % newbieUser.id,
                                                    newbieUser.points)
