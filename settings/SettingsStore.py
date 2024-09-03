@@ -1,4 +1,5 @@
 import json
+import os
 from os.path import exists
 from os import access, R_OK, W_OK
 from typing import Any
@@ -25,6 +26,7 @@ class SettingsStore:
 		if SettingsStore._instance is not None:
 			raise RuntimeError("Trying to instantiate a second instance of the SettingsStore Singleton class")
 		if not exists(path):
+			os.makedirs(os.path.dirname(path), exist_ok=True)
 			with open(path, 'w') as settings_file:
 				print("An empty config file was created at the following path : %s" % path)
 				settings_file.write('{}')

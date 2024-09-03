@@ -15,11 +15,12 @@ active_extensions = [
 ]
 
 if __name__ == "__main__":
-	settings = SettingsStore(abspath('./resources/config.json'))
+	rel_cfg_path = "resources/config.json"
+	settings = SettingsStore(abspath(rel_cfg_path))
 	settings.set_default("prefix", "$")
 	settings.set_default("discord-token", "*****")
 
-	database = SQliteProvider('./resources/members.db')
+	database = SQliteProvider('resources/members.db')
 
 	intents = discord.Intents.all()
 	prefix = settings.get('prefix')
@@ -46,5 +47,9 @@ if __name__ == "__main__":
 			ext = c()
 			ExtensionStore.get_instance().register_extension(ext)
 			await ext.on_load(bot)
-
-	bot.run(settings.get('discord-token'))
+	try:
+		bot.run(settings.get('discord-token'))
+	except discord.errors.LoginFailure:
+		print("----------------------------")
+		print("Invalid discord token provided ! It can be changed at " + abspath(rel_cfg_path))
+		print("----------------------------")
