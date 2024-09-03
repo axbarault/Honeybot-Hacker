@@ -97,7 +97,6 @@ class VerificationExtension(SqlExtension):
 		:return: True if the channel was cleared, False otherwise
 		"""
 		#
-		print(VerificationExtension.verif_channel.last_message_id)
 		if VerificationExtension.verif_channel.last_message_id is None:
 			return False
 		try:
