@@ -1,5 +1,6 @@
 from typing import Any
 
+import discord.errors
 from discord.ui import View, Button
 from discord.errors import NotFound, Forbidden
 from discord.utils import get
@@ -96,9 +97,15 @@ class VerificationExtension(SqlExtension):
 		:return: True if the channel was cleared, False otherwise
 		"""
 		#
+		print(VerificationExtension.verif_channel.last_message_id)
 		if VerificationExtension.verif_channel.last_message_id is None:
 			return False
-		VerificationExtension.verif_msg = await self.verif_channel.fetch_message(self.verif_channel.last_message_id)
+		try:
+			VerificationExtension.verif_msg = await self.verif_channel.fetch_message(self.verif_channel.last_message_id)
+		except discord.errors.NotFound:
+			VerificationExtension.verif_msg = None
+			return True
+
 		if VerificationExtension.verif_msg.author.id != client.user.id:
 			await VerificationExtension.verif_channel.purge(limit=100)
 			return True
