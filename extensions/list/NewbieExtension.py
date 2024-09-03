@@ -37,7 +37,7 @@ class NewbieExtension(SqlExtension):
 		)
 		self.register_command(
 			name='top',
-			description='Déconnecte ton compte Discord de ton profile NewbieContest',
+			description='Affiche le classement NewbieContest du serveur',
 			aliases=['classement', 'rank'],
 			usage=None,
 			handler=NewbieExtension.show_leaderboard
