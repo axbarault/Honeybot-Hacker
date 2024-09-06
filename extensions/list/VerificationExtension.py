@@ -5,7 +5,7 @@ from discord.ui import View, Button
 from discord.errors import NotFound, Forbidden
 from discord.utils import get
 from discord.ext.commands import Bot
-from discord import TextChannel, Role, Embed, ButtonStyle, ComponentType, Interaction, Message, Member
+from discord import TextChannel, Role, Embed, ButtonStyle, Interaction, Message, Member
 
 from extensions import SqlExtension
 from log import *
@@ -18,11 +18,18 @@ class VerificationExtension(SqlExtension):
 	verif_channel: TextChannel = None
 	verif_role: Role = None
 
+	@staticmethod
+	def is_extension_enabled() -> bool:
+		return VerificationExtension.verif_channel is not None and VerificationExtension.verif_role is not None
+
 	async def on_load(self, client: Bot):
 		VerificationExtension.avatar_url = client.user.avatar.url
+		# The listener is added because a welcome message is still sent in the case where the verif channel is setup but not the verif role
 		client.add_listener(self.on_member_join)
 		self.set_default_config()
-		await self.setup_verification_channel(client)
+		# Try to setup a verification channel. The extension won't work if the config isn't properly defined
+		if not await self.setup_verification_channel(client) or self.verif_role is None:
+			error("L'extension de Vérification des membres n'a pas pu être activée. Veuillez régler les erreurs ci-dessus et redémarrer le bot.")
 
 	def set_default_config(self):
 		self.register_extension_setting('channel', '-1')
@@ -38,9 +45,10 @@ class VerificationExtension(SqlExtension):
 		self.register_extension_setting('rules_accept.on_error', 'Woops, on dirait que je n\'ai pas les permissions pour te vérifier... Je préviens les admin, mais n\'hésite pas à les avertir également !')
 		self.register_extension_setting('welcome_message', 'Bienvenue à {mention} chez {server}! Va accepter les règles ici -> {channel}')
 
-	async def setup_verification_channel(self, client: Bot):
-		if not await self.parse_channel_and_role(client):  # Error occurred while parsing
-			return
+	async def setup_verification_channel(self, client: Bot) -> bool:
+		await self.parse_channel_and_role(client)
+		if VerificationExtension.verif_channel is None:
+			return False
 
 		# Build the embed
 		embed = Embed()
@@ -55,15 +63,18 @@ class VerificationExtension(SqlExtension):
 		else:  # Channel was cleared, send a new message
 			await self.verif_channel.send(embed=embed, view=VerifyMessageView())
 
+		return True
+
 	async def parse_channel_and_role(self, client: Bot):
 		"""
-		Parse both the verification channel and the verified role
+		Try to parse both the verification channel and the verified role
 		:param client: Bot user
-		:return: True if both could be parsed, false on error
 		"""
+		# Parse the config
 		verif_channel_id: str = str(self.get_extension_setting('channel', '-1'))
 		verif_role_id: str = str(self.get_extension_setting('role', '-1'))
 
+		# Validate config data format
 		has_error = False
 		if not verif_channel_id.isnumeric() or int(verif_channel_id) < 0:
 			error("Veuillez entrer dans la configuration un identifiant de canal textuel valide (Actuel : %s)" % verif_channel_id)
@@ -72,23 +83,25 @@ class VerificationExtension(SqlExtension):
 			error("Veuillez entrer dans la configuration un identifiant de rôle de vérification valide (Actuel : %s)" % verif_role_id)
 			has_error = True
 		if has_error:
-			return False
+			return
 
+		# Try to match the channel id to a known channel
 		try:
 			VerificationExtension.verif_channel = await client.fetch_channel(int(verif_channel_id))
-			if not isinstance(VerificationExtension.verif_channel, TextChannel):
-				error("Le channel de vérification (ID: %s) n'est pas un salon textuel" % verif_channel_id)
-				return False
-			VerificationExtension.verif_role = get(VerificationExtension.verif_channel.guild.roles, id=int(verif_role_id))
-		except NotFound:
+		except (NotFound, Forbidden):
 			error("Le channel de vérification (ID: %s) n'existe pas ou n'est pas visible par le bot. Veuillez le modifier dans le fichier de configuration" % verif_channel_id)
-			return False
+			return
 
+		# Error messages to pinpoint the channel problem if there is one
+		if VerificationExtension.verif_channel is not None and not isinstance(VerificationExtension.verif_channel, TextChannel):
+			error("Le channel de vérification (ID: %s) n'est pas un salon textuel" % verif_channel_id)
+			return
+
+		# There is no need to check that the verification channel is valid here because we've returned in every case where it wasn't
+		# Try to match the role id to a known role
+		VerificationExtension.verif_role = get(VerificationExtension.verif_channel.guild.roles, id=int(verif_role_id))
 		if VerificationExtension.verif_role is None:
 			error("Le rôle de vérification (ID: %s) n'existe pas. Veuillez le modifier dans le fichier de configuration" % verif_role_id)
-			return False
-
-		return True
 
 	async def clear_verif_channel(self, client: Bot) -> bool:
 		"""
@@ -96,9 +109,9 @@ class VerificationExtension(SqlExtension):
 		:param client: Bot user (Used to check the last author id)
 		:return: True if the channel was cleared, False otherwise
 		"""
-		#
-		if VerificationExtension.verif_channel.last_message_id is None:
-			return False
+		if self.verif_channel.last_message_id is None:
+			return True
+
 		try:
 			VerificationExtension.verif_msg = await self.verif_channel.fetch_message(self.verif_channel.last_message_id)
 		except discord.errors.NotFound:
@@ -116,7 +129,7 @@ class VerificationExtension(SqlExtension):
 		fields = {
 			'{mention}': member.mention,
 			'{server}': member.guild.name,
-			'{channel}': self.verif_channel.mention,
+			'{channel}': self.verif_channel.mention if VerificationExtension.verif_channel is not None else "``### ERROR ###``",
 			'{username}': member.display_name
 		}
 		for k, v in fields.items():
@@ -154,23 +167,29 @@ class VerifyUserButton(Button):
 		"""
 		Called when a user interacts with the button
 		"""
-		# Check if the user already exists
-		has_role = get(interaction.user.roles, id=VerificationExtension.verif_role.id) is not None
-		with VerificationExtension.new_session() as cursor:
-			if cursor.is_verified(interaction.user.id):
-				msg_id = 'rules_accept.on_verify' if not has_role else 'rules_accept.on_reverify'
-			else:
-				msg_id = 'rules_accept.on_verify'
-				cursor.verify(interaction.user.id, interaction.user.display_name)
+		msg_id = 'rules_accept.on_error'
+		if VerificationExtension.verif_role is not None:
+			# Check if the user already exists in the database
+			has_role = get(interaction.user.roles, id=VerificationExtension.verif_role.id) is not None
+			with VerificationExtension.new_session() as cursor:
+				if cursor.is_verified(interaction.user.id):
+					# Greet them anyway even if they are already present in the database
+					msg_id = 'rules_accept.on_verify' if not has_role else 'rules_accept.on_reverify'
+				else:
+					# Verify them in the database ONLY if they are not already present
+					msg_id = 'rules_accept.on_verify'
+					cursor.verify(interaction.user.id, interaction.user.display_name)
 
-		if not has_role:
-			try:
-				await interaction.user.add_roles(VerificationExtension.verif_role, reason="Rules accepted")
-			except Forbidden:
-				msg_id = 'rules_accept.on_error'
-				error("Missing permissions to verify user %s" % interaction.user.display_name)
+			if not has_role:
+				try:
+					await interaction.user.add_roles(VerificationExtension.verif_role, reason="Rules accepted")
+				except Forbidden:
+					msg_id = 'rules_accept.on_error'
+					error("Les permissions pour vérifier %s ne sont pas suffisamment élevées." % interaction.user.display_name)
+		else:
+			error("%s n'a pas pu être vérifié car le role entré dans la config n'est pas valide." % interaction.user.display_name)
 
-		await interaction.response.send_message(VerificationExtension.get_extension_setting(msg_id), ephemeral=True, delete_after=10)
+		await interaction.response.send_message(VerificationExtension.get_extension_setting(msg_id), ephemeral=True, delete_after=20)
 
 
 class VerifyMessageView(View):
