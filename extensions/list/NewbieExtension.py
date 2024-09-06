@@ -128,8 +128,8 @@ class NewbieExtension(SqlExtension):
 		text = ""
 		for pos, user in enumerate(users):
 			text += leaderboard_line % (
-				medals[pos] if pos < 3 else '',
-				user.d_name if origin.guild.get_member(user.d_id) is None else "<@%d>" % user.d_id,
+				medals[pos] if pos < 3 else f'#{pos + 1}',
+				(user.d_name or user.n_name) if origin.guild.get_member(user.d_id) is None else "<@%d>" % user.d_id,
 				user.n_name,
 				"https://www.newbiecontest.org/index.php?page=info_membre&id=%d" % user.n_id,
 				user.n_pts,

@@ -73,7 +73,7 @@ class SQliteSession(sqlite3.Cursor):
 		self.execute(query, [n_points, n_position, d_id])
 
 	def get_newbie_users(self) -> map:
-		rows = self.execute("SELECT d.discord_id, d.discord_name, n.newbie_id, n.newbie_name, n.newbie_points, n.newbie_position FROM discord_users d INNER JOIN newbie_users n ON d.discord_id=n.discord_id ORDER BY n.newbie_points DESC").fetchall()
+		rows = self.execute("SELECT d.discord_id, d.discord_name, n.newbie_id, n.newbie_name, n.newbie_points, n.newbie_position FROM newbie_users n LEFT OUTER JOIN main.discord_users d ON d.discord_id=n.discord_id ORDER BY n.newbie_points DESC").fetchall()
 		return map(lambda row: NewbieUser(*row), rows)
 
 	def __enter__(self):
