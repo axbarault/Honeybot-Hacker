@@ -74,7 +74,12 @@ class NewbieExtension(SqlExtension):
 		try:
 			login = p_login.findall(profile)[0]
 			points = int(p_points.findall(profile)[0])
-			position = int(p_position.findall(profile)[0])
+
+			lb_pos = p_position.findall(profile)
+			if len(lb_pos) >= 1:
+				position = int(p_position.findall(profile)[0])
+			else:
+				position = 0
 		except IndexError:
 			return None
 
@@ -146,7 +151,7 @@ class NewbieExtension(SqlExtension):
 		await origin.reply(embed=embed)
 
 	@staticmethod
-	@tasks.loop(minutes=600)
+	@tasks.loop(minutes=60)
 	async def refresh_all():
 		with NewbieExtension.new_session() as cursor:
 			for newbieUser in cursor.get_newbie_users():
@@ -178,6 +183,7 @@ class NewbieExtension(SqlExtension):
 	@staticmethod
 	def rank_to_kingdom(rank: int) -> str:
 		ranks = {
+			0: "unknown",
 			10: "1337",
 			50: "hax0r",
 			350: 'challenger',
@@ -197,7 +203,7 @@ class NewbieExtension(SqlExtension):
 		embed.add_field(name="Compte NewbieContest", value="%s" % username)
 		embed.add_field(name="", value="")
 		embed.add_field(name="Points", value=str(points))
-		embed.add_field(name="Position", value=str(position))
+		embed.add_field(name="Position", value=str(position) if position > 0 else "HC")
 		embed.add_field(name="Royaume", value=NewbieExtension.rank_to_kingdom(position))
 		embed.colour = int("0xFF0000", 16)
 		return embed
