@@ -186,6 +186,9 @@ class VerifyUserButton(Button):
 				except Forbidden:
 					msg_id = 'rules_accept.on_error'
 					error("Les permissions pour vérifier %s ne sont pas suffisamment élevées." % interaction.user.display_name)
+				except NotFound:
+					msg_id = 'rules_accept.on_error'
+					error("Le role de vérification n'est plus accessible et %s n'a pas pu être vérifié." % interaction.user.display_name)
 		else:
 			error("%s n'a pas pu être vérifié car le role entré dans la config n'est pas valide." % interaction.user.display_name)
 
