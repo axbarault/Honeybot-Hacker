@@ -8,6 +8,7 @@ from discord.ext import commands, tasks
 
 from command import Command
 from extensions import SqlExtension, UtilitiesExtension
+from log import error
 
 
 class NewbieExtension(SqlExtension):
@@ -24,7 +25,7 @@ class NewbieExtension(SqlExtension):
 		self.register_command(
 			name='linknewbie',
 			description='Lie ton compte Discord à ton profile NewbieContest',
-			aliases=['ln', 'newbie'],
+			aliases=['ln'],
 			usage='$ln <pseudo newbie>',
 			handler=NewbieExtension.link_newbie_account
 		)
@@ -36,9 +37,9 @@ class NewbieExtension(SqlExtension):
 			handler=NewbieExtension.unlink_newbie_account
 		)
 		self.register_command(
-			name='top',
+			name='topnb',
 			description='Affiche le classement NewbieContest du serveur',
-			aliases=['classement', 'rank'],
+			aliases=[],
 			usage=None,
 			handler=NewbieExtension.show_leaderboard
 		)
@@ -98,7 +99,7 @@ class NewbieExtension(SqlExtension):
 		username = ' '.join(args)
 		newbie_id = await NewbieExtension.fetch_newbie_id(username)
 		if newbie_id is None:
-			return await origin.reply('Aucun compte NewbieContest n\'est reconnu sous le pseudo %s' % username)
+			return await origin.reply('Aucun compte NewbieContest n\'est reconnu sous le pseudo **%s**' % username)
 
 		with NewbieExtension.new_session() as cursor:
 			alr_linked = cursor.is_newbie_linked(n_id=newbie_id)
@@ -107,11 +108,11 @@ class NewbieExtension(SqlExtension):
 
 		newbie_data = await NewbieExtension.fetch_newbie_data(newbie_id)
 		if newbie_data is None:
-			return await origin.reply('Aucun compte NewbieContest n\'est reconnu sous le pseudo %s' % username)
+			return await origin.reply('Aucun compte NewbieContest n\'est reconnu sous le pseudo **%s**' % username)
 
 		with NewbieExtension.new_session() as cursor:
 			cursor.link_newbie_user(origin.author.id, newbie_id, newbie_data[0], newbie_data[1], newbie_data[2])
-		await origin.reply('Ton compte discord a été lié au profile NewbieContest suivant:', embed=NewbieExtension.build_profile_embed(origin.author.id, newbie_data[0], newbie_data[1], newbie_data[2]))
+		await origin.reply('Ton compte discord a été lié au profile **NewbieContest** suivant:', embed=NewbieExtension.build_profile_embed(origin.author.id, newbie_data[0], newbie_data[1], newbie_data[2]))
 
 	@staticmethod
 	async def unlink_newbie_account(origin: Message, args: list[str], cmd: Command):
@@ -154,10 +155,16 @@ class NewbieExtension(SqlExtension):
 	@tasks.loop(minutes=60)
 	async def refresh_all():
 		with NewbieExtension.new_session() as cursor:
-			for newbieUser in cursor.get_newbie_users():
-				_, n_pts, n_pos = await NewbieExtension.fetch_newbie_data(newbieUser.n_id)
-				cursor.update_newbie_user(newbieUser.d_id, n_pts, n_pos)
-				await sleep(0.1)
+			users = cursor.get_newbie_users()
+		for newbieUser in users:
+			data = await NewbieExtension.fetch_newbie_data(newbieUser.n_id)
+			if data is not None:
+				_, n_pts, n_pos = data
+				with NewbieExtension.new_session() as cursor:
+					cursor.update_newbie_user(newbieUser.d_id, n_pts, n_pos)
+			else:
+				error("Impossible de mettre à jour les données du profile NC %s : Profile inexistant")
+			await sleep(0.1)
 		NewbieExtension.last_update = datetime.now()
 
 	@staticmethod

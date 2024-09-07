@@ -11,6 +11,7 @@ active_extensions = [
 	VerificationExtension,
 	UtilitiesExtension,
 	NewbieExtension,
+	RootMeExtension,
 	FunExtension,
 ]
 

@@ -2,7 +2,7 @@ from os import access, R_OK, W_OK
 from os.path import exists
 import sqlite3
 from log import *
-from structures import NewbieUser
+from structures import NewbieUser, RootMeUser
 
 
 class SQliteConnection(sqlite3.Connection):
@@ -75,6 +75,50 @@ class SQliteSession(sqlite3.Cursor):
 	def get_newbie_users(self) -> map:
 		rows = self.execute("SELECT d.discord_id, d.discord_name, n.newbie_id, n.newbie_name, n.newbie_points, n.newbie_position FROM newbie_users n LEFT OUTER JOIN main.discord_users d ON d.discord_id=n.discord_id ORDER BY n.newbie_points DESC").fetchall()
 		return map(lambda row: NewbieUser(*row), rows)
+
+	###########
+	# ROOT ME #
+	###########
+
+	def create_rootme_users_table(self):
+		self.execute("""
+				CREATE TABLE IF NOT EXISTS rootme_users(
+				discord_id INT PRIMARY KEY NOT NULL,
+				rm_name TEXT UNIQUE NOT NULL,
+				rm_points INT NOT NULL,
+				rm_challenges INT NOT NULL,
+				rm_position INT NOT NULL,
+				FOREIGN KEY (discord_id) REFERENCES discord_users(discord_id)
+				);
+			""")
+
+	def link_rootme_user(self, d_id: int, rm_name: str, rm_pos: int, rm_points: int, rm_challs: int):
+		query = "INSERT INTO rootme_users(discord_id, rm_name, rm_points, rm_challenges, rm_position) VALUES (?, ?, ?, ?, ?)"
+		args = [d_id, rm_name, rm_points, rm_challs, rm_pos]
+		self.execute(query, args)
+
+	def unlink_rootme_user(self, d_id: int):
+		query = "DELETE FROM rootme_users WHERE discord_id=?"
+		self.execute(query, [d_id])
+
+	def is_rootme_linked(self, **kwargs):
+		if kwargs.get('d_id', None) is not None:
+			query = "SELECT COUNT(*) FROM rootme_users WHERE discord_id=?"
+			args = [kwargs.get('d_id')]
+		elif kwargs.get('rm_name', None) is not None:
+			query = "SELECT COUNT(*) FROM rootme_users WHERE LOWER(rm_name)=LOWER(?)"
+			args = [kwargs.get('rm_name')]
+		else:
+			raise ValueError('One of d_id and rm_name keyword argument must be set')
+		return self.execute(query, args).fetchall()[0][0] == 1
+
+	def update_rootme_user(self, d_id: int, rm_pos: int, rm_points: int, rm_challs: int):
+		query = "UPDATE rootme_users SET rm_points=?, rm_challenges=?, rm_position=? WHERE discord_id=?"
+		self.execute(query, [rm_points, rm_challs, rm_pos, d_id])
+
+	def get_rootme_users(self) -> map:
+		rows = self.execute("SELECT d.discord_id, d.discord_name, rm.rm_name, rm.rm_points, rm.rm_challenges, rm.rm_position FROM rootme_users rm LEFT OUTER JOIN main.discord_users d ON d.discord_id=rm.discord_id ORDER BY rm.rm_points DESC").fetchall()
+		return map(lambda row: RootMeUser(*row), rows)
 
 	def __enter__(self):
 		return self
