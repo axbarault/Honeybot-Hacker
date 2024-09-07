@@ -5,7 +5,7 @@ from typing import Coroutine
 
 class Command:
 
-	def __init__(self, name: str, extension: str, description: str, aliases: list[str], usage: Union[str, None], handler: Callable[[Message, list[str], 'Command'], Coroutine]):
+	def __init__(self, name: str, extension: str, description: str, aliases: list[str], usage: Union[str, None], handler: Callable[[Message, list[str]], Coroutine]):
 		"""
 		:param name: Command name
 		:param extension: Nom de l'extension propriétaire de cette commande
@@ -36,9 +36,9 @@ class Command:
 	def get_usage(self) -> Union[str, None]:
 		return self._usage
 
-	def get_handler(self) -> Callable[[Message, list[str], 'Command'], Coroutine]:
+	def get_handler(self) -> Callable[[Message, list[str]], Coroutine]:
 		return self._handler
 
 	async def execute(self, origin: Message, args: list[str]):
-		await self._handler(origin, args, self)
+		await self._handler(origin, args)
 

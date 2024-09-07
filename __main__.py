@@ -44,6 +44,7 @@ if __name__ == "__main__":
 				await CommandMap.get_instance().get_command(command_name).execute(message, args)
 
 	async def load_extensions():
+		BaseExtension.scheduler = bot.loop
 		for c in active_extensions:
 			ext = c()
 			ExtensionStore.get_instance().register_extension(ext)

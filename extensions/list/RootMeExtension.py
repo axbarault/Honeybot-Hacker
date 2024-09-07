@@ -3,96 +3,76 @@ import requests
 
 from typing import Union
 from datetime import datetime
-from asyncio import sleep, AbstractEventLoop
+from asyncio import sleep
 
 from discord import Message, Embed
 from discord.ext import tasks
 from discord.ext.commands import Bot
 
-from extensions import SqlExtension, UtilitiesExtension
-from command import Command
+from extensions import SqlExtension
 from log import error
 
 
 class RootMeExtension(SqlExtension):
 
-	avatar_url: str = None
-	scheduler: AbstractEventLoop = None
-	last_update: datetime = None
-
-	@staticmethod
-	def get_display_name() -> str:
-		return "RootMe Integration"
-
-	@staticmethod
-	def get_short_name() -> str:
-		return "rootme"
-
-	@staticmethod
-	def get_description() -> str:
-		return "Lie ton compte RootMe à Discord et participe à la leaderboard du club !"
-
-	@staticmethod
-	def get_author() -> str:
-		return "Honeypot Hacker"
-
-	@staticmethod
-	def get_contributors() -> list[str]:
-		return []
+	def __init__(self):
+		super().__init__(
+			display_name="RootMe Integration",
+			short_name="rootme",
+			description="Lie ton compte RootMe à Discord et participe à la leaderboard du club !",
+			author="Honeypot Hacker",
+			contributors=[]
+		)
+		self.avatar_url = "https://shop.root-me.org/cdn/shop/files/image.png"
+		self.last_update = datetime.now()
 
 	def setup_tables(self) -> None:
 		with self.new_session() as cursor:
 			cursor.create_rootme_users_table()
 
 	async def on_load(self, client: Bot):
-		RootMeExtension.avatar_url = "https://shop.root-me.org/cdn/shop/files/image.png"
-		RootMeExtension.scheduler = client.loop
-		RootMeExtension.last_update = datetime.now()
-
-		self.register_command(
+		await self.register_command(
 			name='linkrootme',
 			description='Lie ton compte Discord à ton profile RootMe',
 			aliases=['lrm'],
 			usage='$lrm <pseudo rootme>',
-			handler=RootMeExtension.link_rootme_account
+			handler=self.link_rootme_account
 		)
-		self.register_command(
+		await self.register_command(
 			name='unlinkrootme',
 			description='Déconnecte ton compte Discord de ton profile RootMe',
 			aliases=['ulrm'],
 			usage='$ulrm <pseudo rootme>',
-			handler=RootMeExtension.unlink_rootme_account
+			handler=self.unlink_rootme_account
 		)
-		self.register_command(
+		await self.register_command(
 			name='toprm',
 			description='Affiche le classement RootMe du serveur',
 			aliases=[],
 			usage=None,
-			handler=RootMeExtension.show_leaderboard
+			handler=self.show_leaderboard
 		)
 
-		RootMeExtension.refresh_all.start()
+		self.refresh_all.start()
 
-	@staticmethod
 	@tasks.loop(minutes=60)
-	async def refresh_all():
-		with RootMeExtension.new_session() as cursor:
+	async def refresh_all(self):
+		with self.new_session() as cursor:
 			users = cursor.get_rootme_users()
 		for rmUser in users:
-			data = await RootMeExtension.fetch_user_data(rmUser.rm_name)
+			data = await self.fetch_user_data(rmUser.rm_name)
 			if data is not None:
 				_, rm_pos, rm_points, rm_challs = data
-				with RootMeExtension.new_session() as cursor:
+				with self.new_session() as cursor:
 					cursor.update_rootme_user(rmUser.d_id, rm_pos, rm_points, rm_challs)
 			else:
 				error("Impossible de mettre à jour les données du profile RootMe %s : Profile inexistant" % rmUser.rm_name)
 			await sleep(0.1)
-		RootMeExtension.last_update = datetime.now()
+		self.last_update = datetime.now()
 
-	@staticmethod
-	async def fetch_user_data(rm_name: str) -> Union[tuple[str, int, int, int], None]:
+	async def fetch_user_data(self, rm_name: str) -> Union[tuple[str, int, int, int], None]:
 		url = f"https://www.root-me.org/{rm_name}?lang=fr"
-		profile = await RootMeExtension.scheduler.run_in_executor(None, lambda: requests.get(url))
+		profile = await self.scheduler.run_in_executor(None, lambda: requests.get(url))
 
 		# Check if the profile actually exists
 		if profile.status_code != 200:
@@ -114,13 +94,12 @@ class RootMeExtension(SqlExtension):
 
 		return rm_name, int(user_data[0]), int(user_data[1]), int(user_data[2])
 
-	@staticmethod
-	async def link_rootme_account(origin: Message, args: list[str], cmd: Command):
+	async def link_rootme_account(self, origin: Message, args: list[str]):
 		if len(args) == 0:
-			return await UtilitiesExtension.help_command(origin, [cmd.get_name()], cmd)
+			return await self.help(origin, 'lrm')
 
 		rm_name = " ".join(args)
-		with RootMeExtension.new_session() as cursor:
+		with self.new_session() as cursor:
 			is_discord_linked = cursor.is_rootme_linked(d_id=origin.author.id)
 			is_rm_linked = cursor.is_rootme_linked(rm_name=rm_name)
 
@@ -129,28 +108,26 @@ class RootMeExtension(SqlExtension):
 		if is_rm_linked:
 			return await origin.reply('Ce profile RootMe est déjà lié à un compte Discord!\nContact un admin si tu es le propriétaire de ce compte. Sinon, bien tenté, mais non ^^')
 
-		rm_data = await RootMeExtension.fetch_user_data(rm_name)
+		rm_data = await self.fetch_user_data(rm_name)
 		if rm_data is None:
 			return await origin.reply(f'Aucun compte RootMe n\'est reconnu sous le pseudo **{rm_name}**')
 
-		with RootMeExtension.new_session() as cursor:
+		with self.new_session() as cursor:
 			cursor.link_rootme_user(origin.author.id, rm_data[0], rm_data[1], rm_data[2], rm_data[3])
-		await origin.reply('Ton compte discord a été lié au profile **RootMe** suivant:', embed=RootMeExtension.build_profile_embed(origin.author.id, rm_data[0], rm_data[1], rm_data[2], rm_data[3]))
+		await origin.reply('Ton compte discord a été lié au profile **RootMe** suivant:', embed=self.build_profile_embed(origin.author.id, rm_data[0], rm_data[1], rm_data[2], rm_data[3]))
 
-	@staticmethod
-	async def unlink_rootme_account(origin: Message, args: list[str], cmd: Command):
-		with RootMeExtension.new_session() as cursor:
+	async def unlink_rootme_account(self, origin: Message, _: list[str]):
+		with self.new_session() as cursor:
 			has_account = cursor.is_rootme_linked(d_id=origin.author.id)
 		if not has_account:
 			return await origin.reply('Ton compte discord n\'est pas lié à un profile RootMe!\nUtilise ``$lrm <pseudo rootme>`` pour te connecter')
 
-		with RootMeExtension.new_session() as cursor:
+		with self.new_session() as cursor:
 			cursor.unlink_rootme_user(origin.author.id)
 		await origin.reply('Ton compte discord a été déconnecté de RootMe')
 
-	@staticmethod
-	async def show_leaderboard(origin: Message, args: list[str], cmd: Command):
-		with RootMeExtension.new_session() as cursor:
+	async def show_leaderboard(self, origin: Message, _: list[str]):
+		with self.new_session() as cursor:
 			users = cursor.get_rootme_users()
 		medals = {0: '🥇', 1: '🥈', 2: '🥉'}
 		leaderboard_line = "%s ─ %s ─ [%s](%s) ─ %d points\n"
@@ -165,18 +142,17 @@ class RootMeExtension(SqlExtension):
 			)
 
 		embed = Embed()
-		embed.set_author(name="Classement RootMe - %s" % origin.guild.name, icon_url=RootMeExtension.avatar_url)
+		embed.set_author(name="Classement RootMe - %s" % origin.guild.name, icon_url=self.avatar_url)
 		embed.description = text
 		embed.set_footer(text="Dernière mise à jour")
-		embed.timestamp = RootMeExtension.last_update
+		embed.timestamp = self.last_update
 		embed.colour = int("0x111216", 16)
 
 		await origin.reply(embed=embed)
 
-	@staticmethod
-	def build_profile_embed(discord_id, rm_name, rm_pos, rm_points, rm_challs):
+	def build_profile_embed(self, discord_id, rm_name, rm_pos, rm_points, rm_challs):
 		embed = Embed()
-		embed.set_author(name="Profile RootMe", icon_url=RootMeExtension.avatar_url)
+		embed.set_author(name="Profile RootMe", icon_url=self.avatar_url)
 		embed.add_field(name="Compte Discord", value="<@%d>" % discord_id)
 		embed.add_field(name="Compte RootMe", value="%s" % rm_name)
 		embed.add_field(name="", value="")

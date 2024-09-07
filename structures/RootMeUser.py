@@ -1,11 +1,11 @@
 
 class RootMeUser:
 
-	def __init__(self, d_id: int, d_name: str, rm_name: str, rm_points: int, rm_challenges: int, rm_position: int):
-		self.d_id = d_id
-		self.d_name = d_name
-		self.rm_name = rm_name
-		self.rm_points = rm_points
-		self.rm_challenges = rm_challenges
-		self.rm_position = rm_position
+	def __init__(self, **kwargs):
+		self.d_id = kwargs.get('d_id', None)
+		self.d_name = kwargs.get('d_name', None)
+		self.rm_name = kwargs.get('rm_name', None)
+		self.rm_points = kwargs.get('rm_points', None)
+		self.rm_challenges = kwargs.get('rm_challs', None)
+		self.rm_position = kwargs.get('rm_pos', None)
 
