@@ -14,11 +14,12 @@ De nombreux projets d'extension sont à prévoir pour le futur. Tous les modules
 Actuellement, le bot propose les modules suivants :
 
 | Nom du module | Description                                                                                                                                                          |
-|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Verification | Système de vérification des nouveaux membres demandant l'acceptation des règles du serveur                                                                           |
-| Utilities    | Contient de nombreuses commandes utiles (e.i. Pages d'aides générées automatiquement, liens aux réseaux sociaux, descriptions de channels et/ou d'utilisateurs, ...) |
-| Fun          | Ajoute diverses commandes pas vraiment utiles mais très amusantes                                                                                                    |
-| Newbie | Établie un classement interne des utilisateurs sur le site NewbieContest |
+|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Verification  | Système de vérification des nouveaux membres demandant l'acceptation des règles du serveur                                                                           |
+| Utilities     | Contient de nombreuses commandes utiles (e.i. Pages d'aides générées automatiquement, liens aux réseaux sociaux, descriptions de channels et/ou d'utilisateurs, ...) |
+| Fun           | Ajoute diverses commandes pas vraiment utiles mais très amusantes                                                                                                    |
+| Newbie        | Établie un classement interne des utilisateurs sur le site NewbieContest                                                                                             |
+| RootMe        | Établie un classement interne des utilisateurs sur le site RootMe                                                                                                    |
 
 Pour en apprendre davantage sur les extensions et les commandes, tout est accessible depuis le bot via la commande $help.
 

@@ -1,8 +1,9 @@
 class NewbieUser:
-	def __init__(self, d_id, d_name, n_id, n_name, n_pts, n_pos):
-		self.d_id = d_id
-		self.d_name = d_name
-		self.n_id = n_id
-		self.n_name = n_name
-		self.n_pts = n_pts
-		self.n_pos = n_pos
+
+	def __init__(self, **kwargs):
+		self.d_id = kwargs.get('d_id', None)
+		self.d_name = kwargs.get('d_name', None)
+		self.n_id = kwargs.get('n_id', None)
+		self.n_name = kwargs.get('n_name', None)
+		self.n_pts = kwargs.get('n_pts', None)
+		self.n_pos = kwargs.get('n_pos', None)

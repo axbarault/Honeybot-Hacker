@@ -1,5 +1,10 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from extensions import BaseExtension
+
 from typing import Union
-from extensions import BaseExtension
 from log import info
 
 
@@ -22,10 +27,10 @@ class ExtensionStore:
 		self._extensions = {}
 
 	def register_extension(self, ext: BaseExtension):
-		if self.extension_exists(ext.get_short_name()):
-			raise NameError("Extension %s already exists" % ext.get_short_name())
-		self._extensions[ext.get_short_name().lower()] = ext
-		info("Extension Loaded : %s (%s)" % (ext.get_display_name(), ext.get_short_name()))
+		if self.extension_exists(ext.short_name):
+			raise NameError("Extension %s already exists" % ext.short_name)
+		self._extensions[ext.short_name.lower()] = ext
+		info("Extension Loaded : %s (%s)" % (ext.display_name, ext.short_name))
 
 	def extension_exists(self, name: str) -> bool:
 		return name.lower() in self._extensions

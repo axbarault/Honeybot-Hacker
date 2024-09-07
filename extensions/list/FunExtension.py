@@ -6,7 +6,6 @@ from discord import Message
 from discord.ext.commands import Bot
 
 import log
-from command import Command
 from extensions import BaseExtension, UtilitiesExtension
 
 
@@ -14,28 +13,37 @@ class FunExtension(BaseExtension):
 
 	MAX_BOTTLE_LENGTH = 512
 
+	def __init__(self):
+		super().__init__(
+			display_name="Fun",
+			short_name="fun",
+			description="Ajoute une pincée de bonheur et une marmite de wtf",
+			author="Honeypot Hacker",
+			contributors=[]
+		)
+
 	async def on_load(self, client: Bot):
-		self.register_command(
+		await self.register_command(
 			name="motd",
 			description="Y a qu'en essayant que tu comprendras",
 			aliases=['bonjour', 'hello', 'salut', 'slt', 'yo', 'wesh', 'wait', 'what', 'cpt', 'message', 'wtf', 'allo'],
 			usage=None,
-			handler=FunExtension.motd
+			handler=self.motd
 		)
-		self.register_command(
+		await self.register_command(
 			name="chocolatine",
 			description="On est pas du sud nous",
 			aliases=[],
 			usage="$chocolatine <message>",
-			handler=FunExtension.chocolatine
+			handler=self.chocolatine
 		)
 		# Bouteille a la mer
-		self.register_command(
+		await self.register_command(
 			name="capsule",
 			description="Ouvre ou envoie une bouteille à la mer",
 			aliases=['bouteille'],
 			usage="$capsule\n$capsule [message]",
-			handler=FunExtension.capsule
+			handler=self.capsule
 		)
 		self.register_extension_setting('capsule.format.open', '***{user}*** *casse la bouteille et lis le message glissé à l\'intérieur:*\n> \"{msg}\" - **{author}**\n*Une date est inscrite en bas de la page: *<t:{date}>')
 		self.register_extension_setting('capsule.format.empty', '***{user}*** *casse une bouteille mais celle-ci était vide.*')
@@ -46,28 +54,7 @@ class FunExtension(BaseExtension):
 		self.register_extension_setting('capsule.author', client.user.display_name)
 		self.register_extension_setting('capsule.date', int(time.time()))
 
-	@staticmethod
-	def get_display_name() -> str:
-		return "Fun"
-
-	@staticmethod
-	def get_short_name() -> str:
-		return "fun"
-
-	@staticmethod
-	def get_description() -> str:
-		return "Ajoute une pincée de bonheur et une marmite de wtf"
-
-	@staticmethod
-	def get_author() -> str:
-		return "Honeypot Hacker"
-
-	@staticmethod
-	def get_contributors() -> list[str]:
-		return []
-
-	@staticmethod
-	async def motd(origin: Message, _: list[str], __: Command):
+	async def motd(self, origin: Message, _: list[str]):
 		messages = [
 			"Salutations !", "Hello !", "Wesh wesh", "Yo", "Bien ou bien ?", "Привет!", "Guten tag!", "你好！",
 			"すみません、私はリンゴです",
@@ -98,8 +85,7 @@ class FunExtension(BaseExtension):
 		rnd = randint(0, len(messages) - 1)
 		await origin.reply(messages[rnd])
 
-	@staticmethod
-	async def chocolatine(origin: Message, args: list[str], self: Command):  # yaayay
+	async def chocolatine(self, origin: Message, args: list[str]):  # yaayay
 		if origin.reference is not None:
 			# Replying to a message, in which case we take that message's content as arguments
 			target = await origin.channel.fetch_message(origin.reference.message_id)
@@ -107,13 +93,13 @@ class FunExtension(BaseExtension):
 		else:
 			# Not replying to a message
 			if len(args) == 0:
-				return await UtilitiesExtension.help_command(origin, [self.get_name()], self)
+				return await self.help(origin, 'chocolatine')
 			target = origin
 
 		# Count "tine" occurrences
 		count = 0
 		for word in args:
-			if re.match("^.*tines?$", word):
+			if re.match(".*tines?", word):
 				is_plural = word.endswith('s')
 				await target.reply("Sans te contredire %s, on ne dit pas **%s** mais **pain%s au %s** !" % (origin.author.display_name, word, 's' if is_plural else '', word[:-4] if is_plural else word[:-3]))
 				count += 1
@@ -122,22 +108,21 @@ class FunExtension(BaseExtension):
 		if count == 0 and target != origin:
 			await origin.reply("Eh bé petit t'es pompette? Y a tchi d'mal dans ce qu'il a dit!")
 
-	@staticmethod
-	async def capsule(origin: Message, args: list[str], self: Command):
+	async def capsule(self, origin: Message, args: list[str]):
 		if args.__len__() == 0:
 			# Open the capsule
-			capsule_cnt = FunExtension.get_extension_setting('capsule.message')
-			capsule_author = FunExtension.get_extension_setting('capsule.author')
-			capsule_date = FunExtension.get_extension_setting('capsule.date')
+			capsule_cnt = self.get_extension_setting('capsule.message')
+			capsule_author = self.get_extension_setting('capsule.author')
+			capsule_date = self.get_extension_setting('capsule.date')
 
 			if capsule_cnt is None:
-				response: str = FunExtension.get_extension_setting('capsule.format.empty')
+				response: str = self.get_extension_setting('capsule.format.empty')
 			else:
-				response: str = FunExtension.get_extension_setting('capsule.format.open')
+				response: str = self.get_extension_setting('capsule.format.open')
 
-				FunExtension.set_extension_setting('capsule.message', None)
-				FunExtension.set_extension_setting('capsule.author', None)
-				FunExtension.set_extension_setting('capsule.date', None)
+				self.set_extension_setting('capsule.message', None)
+				self.set_extension_setting('capsule.author', None)
+				self.set_extension_setting('capsule.date', None)
 
 			await origin.reply(response.format(
 				user=origin.author.display_name,
@@ -152,16 +137,16 @@ class FunExtension(BaseExtension):
 			await origin.delete()
 
 			if capsule_cnt.__len__() > FunExtension.MAX_BOTTLE_LENGTH:
-				response = FunExtension.get_extension_setting('capsule.format.too_long')
+				response = self.get_extension_setting('capsule.format.too_long')
 			else:
-				if FunExtension.get_extension_setting('capsule.message') is None:
-					response = FunExtension.get_extension_setting('capsule.format.write')
+				if self.get_extension_setting('capsule.message') is None:
+					response = self.get_extension_setting('capsule.format.write')
 				else:
-					response = FunExtension.get_extension_setting('capsule.format.overwrite')
+					response = self.get_extension_setting('capsule.format.overwrite')
 
-				FunExtension.set_extension_setting('capsule.message', capsule_cnt)
-				FunExtension.set_extension_setting('capsule.author', capsule_author)
-				FunExtension.set_extension_setting('capsule.date', int(time.time()))
+				self.set_extension_setting('capsule.message', capsule_cnt)
+				self.set_extension_setting('capsule.author', capsule_author)
+				self.set_extension_setting('capsule.date', int(time.time()))
 
 				log.info("New Bottled Message. Content: '{}'  |  Author : '{}'".format(capsule_cnt, origin.author.name))
 

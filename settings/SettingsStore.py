@@ -18,6 +18,7 @@ class SettingsStore:
 		return SettingsStore._instance
 
 	field_separator = '.'
+	fs = field_separator
 
 	def __init__(self, path: str):
 		"""
@@ -46,7 +47,7 @@ class SettingsStore:
 		:param default: Default value returned in case the setting doesn't exist
 		:return: The setting value
 		"""
-		field = field.split(SettingsStore.field_separator)
+		field = field.split(SettingsStore.fs)
 		nested = self._settings
 		for key in field:
 			if key not in nested:
@@ -63,7 +64,7 @@ class SettingsStore:
 		:param field: Nested field path (e.i. newbie.table_name)
 		:param value: Value to replace the setting with
 		"""
-		field = field.split(SettingsStore.field_separator)
+		field = field.split(SettingsStore.fs)
 		nested = self._settings
 		for key in field[:-1]:
 			nested = nested.setdefault(key, {})
@@ -80,7 +81,7 @@ class SettingsStore:
 		:param value: Value to replace the setting with
 		:return: True if the setting was created, False if it already existed
 		"""
-		field = field.split(SettingsStore.field_separator)
+		field = field.split(SettingsStore.fs)
 		nested = self._settings
 		for key in field[:-1]:
 			nested = nested.setdefault(key, {})

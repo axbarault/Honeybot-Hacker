@@ -74,7 +74,7 @@ class SQliteSession(sqlite3.Cursor):
 
 	def get_newbie_users(self) -> map:
 		rows = self.execute("SELECT d.discord_id, d.discord_name, n.newbie_id, n.newbie_name, n.newbie_points, n.newbie_position FROM newbie_users n LEFT OUTER JOIN main.discord_users d ON d.discord_id=n.discord_id ORDER BY n.newbie_points DESC").fetchall()
-		return map(lambda row: NewbieUser(*row), rows)
+		return map(lambda row: NewbieUser(d_id=row[0], d_name=row[1], n_id=row[2], n_name=row[3], n_pts=row[4], n_pos=row[5]), rows)
 
 	###########
 	# ROOT ME #
@@ -118,7 +118,7 @@ class SQliteSession(sqlite3.Cursor):
 
 	def get_rootme_users(self) -> map:
 		rows = self.execute("SELECT d.discord_id, d.discord_name, rm.rm_name, rm.rm_points, rm.rm_challenges, rm.rm_position FROM rootme_users rm LEFT OUTER JOIN main.discord_users d ON d.discord_id=rm.discord_id ORDER BY rm.rm_points DESC").fetchall()
-		return map(lambda row: RootMeUser(*row), rows)
+		return map(lambda row: RootMeUser(d_id=row[0], d_name=row[1], rm_name=row[2], rm_points=row[3], rm_challs=row[4], rm_pos=row[5]), rows)
 
 	def __enter__(self):
 		return self
