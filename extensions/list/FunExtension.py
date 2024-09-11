@@ -6,7 +6,7 @@ from discord import Message
 from discord.ext.commands import Bot
 
 import log
-from extensions import BaseExtension, UtilitiesExtension
+from extensions import BaseExtension
 
 
 class FunExtension(BaseExtension):

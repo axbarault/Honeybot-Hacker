@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
 	from extensions import UtilitiesExtension
 
@@ -10,9 +12,9 @@ from asyncio import AbstractEventLoop
 from abc import ABC, abstractmethod
 from typing import Any, Union, Callable, Coroutine, final
 
-from extensions import ExtensionStore
+from extensions.ExtensionStore import ExtensionStore
 from command import Command, CommandMap
-from settings import SettingsStore, SQliteProvider, SQliteSession
+from settings import SettingsStore
 
 
 class BaseExtension(ABC):
@@ -89,54 +91,10 @@ class SqlExtension(BaseExtension, ABC):
 
 	def __init__(self, display_name: str, short_name: str, description: str, author: str, contributors: list[str]):
 		super().__init__(display_name, short_name, description, author, contributors)
-		self.setup_tables()
 
-	@staticmethod
-	def new_session() -> SQliteSession:
-		return SQliteProvider.get_instance().new_session()
+	async def on_load(self, client: Bot):
+		await super().on_load(client)
 
 	@abstractmethod
 	def setup_tables(self) -> None:
 		pass
-
-
-# class ChallengeSiteExtension(SqlExtension, ABC):
-#
-# 	def __init__(self, site_name: str, site_initials: str, site_avatar: str):
-# 		super().__init__()
-# 		self.site_name = site_name
-# 		self.site_short_name = site_name.replace(" ", "").lower()
-# 		self.site_initials = site_initials
-# 		self.site_avatar = site_avatar
-# 		self.last_update = datetime.now()
-#
-# 	async def on_load(self, client: Bot):
-# 		# Link Command
-# 		self.register_command(
-# 			f'link{self.site_short_name}'
-# 		)
-#
-# 	@staticmethod
-# 	@abstractmethod
-# 	def link_user(cursor: SQliteProvider, user):
-# 		"""
-# 		Performs the required operations to insert a new discord link into the database
-# 		:param cursor: A db cursor
-# 		:param user: A user structure
-# 		"""
-# 		pass
-#
-# 	@staticmethod
-# 	@abstractmethod
-# 	def unlink_user(cursor: SQliteProvider, d_id: int):
-# 		"""
-# 		Performs the required operations to remove a discord link from the database
-# 		:param cursor: A db cursor
-# 		:param d_id: The discord id to unlink
-# 		"""
-# 		pass
-
-
-
-
-

@@ -1,2 +1,2 @@
-from .NewbieUser import NewbieUser
-from .RootMeUser import RootMeUser
+from .SiteUserStructures import *
+from .SiteDbFunctions import SiteDbFunctions

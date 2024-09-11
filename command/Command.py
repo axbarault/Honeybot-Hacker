@@ -10,7 +10,7 @@ class Command:
 		:param name: Command name
 		:param extension: Nom de l'extension propriétaire de cette commande
 		:param description: Command description
-		:parap usage: Message d'aide pour utiliser la commande
+		:param usage: Message d'aide pour utiliser la commande
 		:param aliases: Command aliases / alternative names
 		:param handler: Command handler (async function taking the originating Message as well as a list of arguments as its parameters)
 		"""

@@ -1,8 +1,10 @@
 from os import access, R_OK, W_OK
 from os.path import exists
 import sqlite3
+from typing import Union
+
 from log import *
-from structures import NewbieUser, RootMeUser
+from structures import NewbieUser, RootMeUser, SiteDbFunctions
 
 
 class SQliteConnection(sqlite3.Connection):
@@ -13,6 +15,10 @@ class SQliteConnection(sqlite3.Connection):
 
 class SQliteSession(sqlite3.Cursor):
 
+	LINK_NONE = 0
+	LINK_DID = 1
+	LINK_RID = 2
+
 	################
 	# VERIFICATION #
 	################
@@ -20,17 +26,17 @@ class SQliteSession(sqlite3.Cursor):
 	def create_discord_users_table(self):
 		self.execute("""
 				CREATE TABLE IF NOT EXISTS discord_users(
-				discord_id INT PRIMARY KEY NOT NULL,
-				discord_name TEXT NOT NULL
+				d_id INT PRIMARY KEY NOT NULL,
+				d_name TEXT NOT NULL
 				)
 			""")
 
 	def is_verified(self, user_id: int) -> bool:
-		query = "SELECT COUNT(*) FROM discord_users WHERE discord_id=?"
+		query = "SELECT COUNT(*) FROM discord_users WHERE d_id=?"
 		return self.execute(query, [user_id]).fetchall()[0][0] == 1
 
 	def verify(self, user_id: int, username: str):
-		query = "INSERT INTO discord_users(discord_id, discord_name) VALUES (?, ?)"
+		query = "INSERT INTO discord_users (d_id, d_name) VALUES (?, ?)"
 		self.execute(query, [user_id, username])
 
 	##################
@@ -39,42 +45,62 @@ class SQliteSession(sqlite3.Cursor):
 	def create_newbie_users_table(self):
 		self.execute("""
 				CREATE TABLE IF NOT EXISTS newbie_users(
-				discord_id INT PRIMARY KEY NOT NULL,
-				newbie_id INT UNIQUE NOT NULL,
-				newbie_name TEXT NOT NULL,
-				newbie_points INT NOT NULL,
-				newbie_position INT NOT NULL,
-				FOREIGN KEY (discord_id) REFERENCES discord_users(discord_id)
+				d_id INT PRIMARY KEY NOT NULL,
+				rm_id INT UNIQUE NOT NULL,
+				rm_name TEXT NOT NULL,
+				rm_pts INT NOT NULL,
+				rm_pos INT NOT NULL,
+				FOREIGN KEY (d_id) REFERENCES discord_users(d_id)
 				);
 			""")
 
-	def link_newbie_user(self, d_id: int, n_id: int, n_name: str, n_points: int, n_position: int):
-		query = "INSERT INTO newbie_users(discord_id, newbie_id, newbie_name, newbie_points, newbie_position) VALUES (?, ?, ?, ?, ?)"
-		args = [d_id, n_id, n_name, n_points, n_position]
+	def link_newbie_user(self, user: NewbieUser):
+		query = "INSERT INTO newbie_users(d_id, rm_id, rm_name, rm_pts, rm_pos) VALUES (?, ?, ?, ?, ?)"
+		args = [user.d_id, user.rm_id, user.rm_name, user.rm_pts, user.rm_pos]
 		self.execute(query, args)
 
-	def unlink_newbie_user(self, d_id: int):
-		query = "DELETE FROM newbie_users WHERE discord_id=?"
-		self.execute(query, [d_id])
+	def unlink_newbie_user(self, user: NewbieUser):
+		query = "DELETE FROM newbie_users WHERE d_id=?"
+		self.execute(query, [user.d_id])
 
-	def is_newbie_linked(self, **kwargs):
-		if kwargs.get('d_id', None) is not None:
-			query = "SELECT COUNT(*) FROM newbie_users WHERE discord_id=?"
-			args = [kwargs.get('d_id')]
-		elif kwargs.get('n_id', None) is not None:
-			query = "SELECT COUNT(*) FROM newbie_users WHERE newbie_id=?"
-			args = [kwargs.get('n_id')]
-		else:
-			raise ValueError('One of d_id and n_id keyword argument must be set')
-		return self.execute(query, args).fetchall()[0][0] == 1
+	def is_newbie_linked(self, d_id: Union[int, None] = None, rm_id: Union[int, None] = None) -> int:
+		assert d_id is not None or rm_id is not None
+		# Check for discord id
+		if d_id is not None:
+			query = "SELECT COUNT(*) FROM newbie_users WHERE d_id=?"
+			if self.execute(query, [d_id]).fetchall()[0][0] >= 1:
+				return self.LINK_DID
+		# Check for remote id
+		if rm_id is not None:
+			query = "SELECT COUNT(*) FROM newbie_users WHERE rm_id=?"
+			if self.execute(query, [rm_id]).fetchall()[0][0] >= 1:
+				return self.LINK_RID
+		return self.LINK_NONE
 
-	def update_newbie_user(self, d_id: int, n_points: int, n_position: int):
-		query = "UPDATE newbie_users SET newbie_points=?, newbie_position=? WHERE discord_id=?"
-		self.execute(query, [n_points, n_position, d_id])
+	def update_newbie_user(self, user: NewbieUser):
+		query = "UPDATE newbie_users SET rm_pts=?, rm_pos=? WHERE d_id=?"
+		self.execute(query, [user.rm_pts, user.rm_pos, user.d_id])
 
 	def get_newbie_users(self) -> map:
-		rows = self.execute("SELECT d.discord_id, d.discord_name, n.newbie_id, n.newbie_name, n.newbie_points, n.newbie_position FROM newbie_users n LEFT OUTER JOIN main.discord_users d ON d.discord_id=n.discord_id ORDER BY n.newbie_points DESC").fetchall()
-		return map(lambda row: NewbieUser(d_id=row[0], d_name=row[1], n_id=row[2], n_name=row[3], n_pts=row[4], n_pos=row[5]), rows)
+		rows = self.execute("SELECT d.d_id, d.d_name, n.rm_id, n.rm_name, n.rm_pts, n.rm_pos FROM newbie_users n LEFT OUTER JOIN discord_users d ON d.d_id=n.d_id ORDER BY n.rm_pts DESC").fetchall()
+		return map(lambda row: NewbieUser(d_id=row[0], d_name=row[1], rm_id=row[2], rm_name=row[3], rm_pts=row[4], rm_pos=row[5]), rows)
+
+	def get_newbie_user(self, d_id: int) -> Union[None, NewbieUser]:
+		rows = self.execute("SELECT d.d_id, d.d_name, n.rm_id, n.rm_name, n.rm_pts, n.rm_pos FROM newbie_users n LEFT OUTER JOIN discord_users d ON d.d_id=n.d_id WHERE d.d_id=?", [d_id]).fetchall()
+		if len(rows) == 0:
+			return None
+		row = rows[0]
+		return NewbieUser(d_id=row[0], d_name=row[1], rm_id=row[2], rm_name=row[3], rm_pts=row[4], rm_pos=row[5])
+
+	NEWBIE_FUNCTION_SET = SiteDbFunctions(
+		create_tables=create_newbie_users_table,
+		link_user=link_newbie_user,
+		unlink_user=unlink_newbie_user,
+		check_linked=is_newbie_linked,
+		update_user=update_newbie_user,
+		get_users=get_newbie_users,
+		get_user=get_newbie_user
+	)
 
 	###########
 	# ROOT ME #
@@ -83,42 +109,64 @@ class SQliteSession(sqlite3.Cursor):
 	def create_rootme_users_table(self):
 		self.execute("""
 				CREATE TABLE IF NOT EXISTS rootme_users(
-				discord_id INT PRIMARY KEY NOT NULL,
-				rm_name TEXT UNIQUE NOT NULL,
-				rm_points INT NOT NULL,
-				rm_challenges INT NOT NULL,
-				rm_position INT NOT NULL,
-				FOREIGN KEY (discord_id) REFERENCES discord_users(discord_id)
+				d_id INT PRIMARY KEY NOT NULL,
+				rm_id INT UNIQUE NOT NULL,
+				rm_name TEXT NOT NULL,
+				rm_pts INT NOT NULL,
+				rm_challs INT NOT NULL,
+				rm_pos INT NOT NULL,
+				rm_rank TEXT NOT NULL,
+				FOREIGN KEY (d_id) REFERENCES discord_users(d_id)
 				);
 			""")
 
-	def link_rootme_user(self, d_id: int, rm_name: str, rm_pos: int, rm_points: int, rm_challs: int):
-		query = "INSERT INTO rootme_users(discord_id, rm_name, rm_points, rm_challenges, rm_position) VALUES (?, ?, ?, ?, ?)"
-		args = [d_id, rm_name, rm_points, rm_challs, rm_pos]
+	def link_rootme_user(self, user: RootMeUser):
+		query = "INSERT INTO rootme_users(d_id, rm_id, rm_name, rm_pts, rm_challs, rm_pos, rm_rank) VALUES (?, ?, ?, ?, ?, ?, ?)"
+		args = [user.d_id, user.rm_id, user.rm_name, user.rm_pts, user.rm_challs, user.rm_pos, user.rm_rank]
 		self.execute(query, args)
 
-	def unlink_rootme_user(self, d_id: int):
-		query = "DELETE FROM rootme_users WHERE discord_id=?"
-		self.execute(query, [d_id])
+	def unlink_rootme_user(self, user: RootMeUser):
+		query = "DELETE FROM rootme_users WHERE d_id=?"
+		self.execute(query, [user.d_id])
 
-	def is_rootme_linked(self, **kwargs):
-		if kwargs.get('d_id', None) is not None:
-			query = "SELECT COUNT(*) FROM rootme_users WHERE discord_id=?"
-			args = [kwargs.get('d_id')]
-		elif kwargs.get('rm_name', None) is not None:
-			query = "SELECT COUNT(*) FROM rootme_users WHERE LOWER(rm_name)=LOWER(?)"
-			args = [kwargs.get('rm_name')]
-		else:
-			raise ValueError('One of d_id and rm_name keyword argument must be set')
-		return self.execute(query, args).fetchall()[0][0] == 1
+	def is_rootme_linked(self, d_id: Union[int, None] = None, rm_id: Union[int, None] = None) -> int:
+		assert d_id is not None or rm_id is not None
+		# Check for discord id
+		if d_id is not None:
+			query = "SELECT COUNT(*) FROM rootme_users WHERE d_id=?"
+			if self.execute(query, [d_id]).fetchall()[0][0] >= 1:
+				return self.LINK_DID
+		# Check for remote id
+		if rm_id is not None:
+			query = "SELECT COUNT(*) FROM rootme_users WHERE rm_id=?"
+			if self.execute(query, [rm_id]).fetchall()[0][0] >= 1:
+				return self.LINK_RID
+		return self.LINK_NONE
 
-	def update_rootme_user(self, d_id: int, rm_pos: int, rm_points: int, rm_challs: int):
-		query = "UPDATE rootme_users SET rm_points=?, rm_challenges=?, rm_position=? WHERE discord_id=?"
-		self.execute(query, [rm_points, rm_challs, rm_pos, d_id])
+	def update_rootme_user(self, user: RootMeUser):
+		query = "UPDATE rootme_users SET rm_name=?, rm_pts=?, rm_challs=?, rm_pos=?, rm_rank=? WHERE d_id=?"
+		self.execute(query, [user.rm_name, user.rm_pts, user.rm_challs, user.rm_pos, user.rm_rank, user.d_id])
 
 	def get_rootme_users(self) -> map:
-		rows = self.execute("SELECT d.discord_id, d.discord_name, rm.rm_name, rm.rm_points, rm.rm_challenges, rm.rm_position FROM rootme_users rm LEFT OUTER JOIN main.discord_users d ON d.discord_id=rm.discord_id ORDER BY rm.rm_points DESC").fetchall()
-		return map(lambda row: RootMeUser(d_id=row[0], d_name=row[1], rm_name=row[2], rm_points=row[3], rm_challs=row[4], rm_pos=row[5]), rows)
+		rows = self.execute("SELECT d.d_id, d.d_name, rm.rm_id, rm.rm_name, rm.rm_pts, rm.rm_challs, rm.rm_pos, rm.rm_rank FROM rootme_users rm LEFT OUTER JOIN discord_users d ON d.d_id=rm.d_id ORDER BY rm.rm_pts DESC").fetchall()
+		return map(lambda row: RootMeUser(d_id=row[0], d_name=row[1], rm_id=row[2], rm_name=row[3], rm_pts=row[4], rm_challs=row[5], rm_pos=row[6], rm_rank=row[7]), rows)
+
+	def get_rootme_user(self, d_id: int) -> Union[None, RootMeUser]:
+		rows = self.execute("SELECT d.d_id, d.d_name, rm.rm_id, rm.rm_name, rm.rm_pts, rm.rm_challs, rm.rm_pos, rm.rm_rank FROM rootme_users rm LEFT OUTER JOIN discord_users d ON d.d_id=rm.d_id WHERE d.d_id=?", [d_id]).fetchall()
+		if len(rows) == 0:
+			return None
+		row = rows[0]
+		return RootMeUser(d_id=row[0], d_name=row[1], rm_id=row[2], rm_name=row[3], rm_pts=row[4], rm_challs=row[5], rm_pos=row[6], rm_rank=row[7])
+
+	ROOTME_FUNCTION_SET = SiteDbFunctions(
+		create_tables=create_rootme_users_table,
+		link_user=link_rootme_user,
+		unlink_user=unlink_rootme_user,
+		check_linked=is_rootme_linked,
+		update_user=update_rootme_user,
+		get_users=get_rootme_users,
+		get_user=get_rootme_user
+	)
 
 	def __enter__(self):
 		return self

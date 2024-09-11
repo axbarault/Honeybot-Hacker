@@ -8,6 +8,7 @@ from discord.ext.commands import Bot
 from discord import TextChannel, Role, Embed, ButtonStyle, Interaction, Message, Member
 
 from extensions import SqlExtension
+from extensions.ExtensionUtils import new_session
 from log import *
 
 
@@ -25,16 +26,17 @@ class VerificationExtension(SqlExtension):
 		self.verif_msg: Union[Message, None] = None
 		self.verif_channel: Union[TextChannel, None] = None
 		self.verif_role: Union[Role, None] = None
+		self.setup_tables()
 
 	def is_extension_enabled(self) -> bool:
 		return self.verif_channel is not None and self.verif_role is not None
 
 	async def on_load(self, client: Bot):
 		self.avatar_url = client.user.avatar.url
-		# The listener is added because a welcome message is still sent in the case where the verif channel is setup but not the verif role
+		# The listener is added because a welcome message is still sent in the case where the verif channel is set up but not the verif role
 		client.add_listener(self.on_member_join)
 		self.set_default_config()
-		# Try to setup a verification channel. The extension won't work if the config isn't properly defined
+		# Try to set up a verification channel. The extension won't work if the config isn't properly defined
 		if not await self.setup_verification_channel(client) or self.verif_role is None:
 			error("L'extension de Vérification des membres n'a pas pu être activée. Veuillez régler les erreurs ci-dessus et redémarrer le bot.")
 
@@ -133,18 +135,15 @@ class VerificationExtension(SqlExtension):
 	async def on_member_join(self, member: Member):
 		channel = member.guild.system_channel
 		message: str = self.get_extension_setting('welcome_message')
-		fields = {
-			'{mention}': member.mention,
-			'{server}': member.guild.name,
-			'{channel}': self.verif_channel.mention if self.verif_channel is not None else "``### ERROR ###``",
-			'{username}': member.display_name
-		}
-		for k, v in fields.items():
-			message = message.replace(k, v)
-		await channel.send(message)
+		await channel.send(message.format(
+			mention=member.mention,
+			server=member.guild.name,
+			channel=self.verif_channel.mention if self.verif_channel is not None else "``### ERROR ###``",
+			username=member.display_name
+		))
 
 	def setup_tables(self) -> None:
-		with self.new_session() as cursor:
+		with new_session() as cursor:
 			cursor.create_discord_users_table()
 
 
@@ -162,7 +161,7 @@ class VerifyUserButton(Button):
 		if self.ext.verif_role is not None:
 			# Check if the user already exists in the database
 			has_role = get(interaction.user.roles, id=self.ext.verif_role.id) is not None
-			with VerificationExtension.new_session() as cursor:
+			with new_session() as cursor:
 				if cursor.is_verified(interaction.user.id):
 					# Greet them anyway even if they are already present in the database
 					msg_id = 'rules_accept.on_verify' if not has_role else 'rules_accept.on_reverify'

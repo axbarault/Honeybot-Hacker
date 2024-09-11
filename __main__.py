@@ -1,6 +1,7 @@
 import discord
 import discord.ext.commands
 from os.path import abspath
+
 from settings import SettingsStore, SQliteProvider
 from command import CommandMap
 from extensions import *
@@ -10,8 +11,7 @@ from log import *
 active_extensions = [
 	VerificationExtension,
 	UtilitiesExtension,
-	NewbieExtension,
-	RootMeExtension,
+	SiteLeaderboardsExtension,
 	FunExtension,
 ]
 
