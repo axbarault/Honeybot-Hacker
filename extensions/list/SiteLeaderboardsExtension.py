@@ -74,7 +74,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 			name="profile",
 			description="Inspecte en détail ton profile sur l'un des sites de challenges lié à ton compte Discord",
 			aliases=["p"],
-			usage="$p <site>",
+			usage="$p [site]",
 			handler=self.profile_request
 		)
 
@@ -264,40 +264,6 @@ class SiteLeaderboardsExtension(SqlExtension):
 				embed=self.build_profile_embed(target_site, user),
 				view=SiteSelectView(linked_sites, origin.author.id, self.profile_interaction_handler, target_site)
 			)
-
-		# # Check argument count
-		# if len(args) != 1:
-		# 	await self.help(origin, "profile")
-		# 	return
-		# # Check if the author has already linked any of their accounts
-		# d_id = origin.author.id
-		#
-		# linked_sites = self.get_linked_sites(d_id)
-		# if len(linked_sites) == 0:
-		# 	await origin.reply("Woops... On dirait que tu n'as pas encore lié ton compte Discord à un site de challenge !\nPour connecter un compte, utilise la commande ``$ln <site> <pseudo|id>``")
-		# 	return
-		#
-		# # Check if the specified site exists
-		# site = self.site_from_alias(args[0])
-		# if site is None:
-		# 	supported_names = "**, **".join(map(lambda x: x.aliases[0], linked_sites))
-		# 	await origin.reply(f"Hmmm... Aucun site ne correspond à ``{args[0].lower()}``. Essaye plutôt un de ceux là: **" + supported_names + "**")
-		# 	return
-		# if site not in linked_sites:
-		# 	await origin.reply(f"Woops... On dirait que tu n'as pas encore lié ton compte Discord à {site.site_name} !\nPour connecter ton compte, utilise la commande ``$ln {site.aliases[0]} <pseudo|id>``")
-		# 	return
-		#
-		# # Create a new partially filled user structure
-		# with new_session() as cursor:
-		# 	user = site.site_fns.get_user(cursor, d_id)
-		#
-		# if user is None:
-		# 	return  # Shouldn't happen
-		#
-		# embed = site.build_profile_embed(user)
-		# embed.timestamp = self.last_update
-		# embed.set_footer(text="Dernière mise à jour")
-		# await origin.reply(embed=embed)
 
 	def build_profile_embed(self, _site: ChallengeSite, _user: SiteUser):
 		embed = _site.build_profile_embed(_user)

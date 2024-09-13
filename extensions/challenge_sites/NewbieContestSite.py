@@ -41,7 +41,9 @@ class NewbieContestSite(ChallengeSite[NewbieUser]):
 			page = await self.request_webpage(f"https://www.newbiecontest.org/index.php?page=classementdynamique&member={into.rm_name}&nosmiley=1")
 			if page.status_code != 200:
 				return False
-			regex_result = re.findall(r"Recherche de.*id=(\d+)\">", page.text)
+			# The following did not necessarily work when several matches were found
+			# regex_result = re.findall(r"Recherche de.*id=(\d+)\">", page.text)
+			regex_result = re.findall(rf"<a href=.*?;id=(\d+).*>\b{into.rm_name}\b", page.text, re.IGNORECASE)
 			if len(regex_result) == 0:
 				return False
 			into.rm_id = int(regex_result[0])
