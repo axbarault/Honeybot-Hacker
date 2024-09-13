@@ -41,6 +41,7 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 				return False  # Should never happen
 			# Sadly I don't think we can get the user ID from a username without dirty regex :(
 			page = await self.request_webpage(self.get_user_url(into))
+			print("1", page.text)
 			if page.status_code != 200:
 				return False
 			# Extract the user id from the profile image name (Other sources can be found if that one fails in the future)

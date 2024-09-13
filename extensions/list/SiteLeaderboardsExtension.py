@@ -286,7 +286,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 			view=SiteSelectView(_linked_sites, author_id, self.profile_interaction_handler, _target_site) if len(_linked_sites) > 1 else None
 		)
 
-	@tasks.loop(minutes=120)
+	@tasks.loop(minutes=240)
 	async def refresh_all(self):
 		"""
 		Refresh database information
@@ -300,7 +300,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 					continue
 				with new_session() as cursor:
 					site.site_fns.update_user(cursor, user)
-				await asyncio.sleep(0.5)
+				await asyncio.sleep(5)
 		self.last_update = datetime.now()
 
 
