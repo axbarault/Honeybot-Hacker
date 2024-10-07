@@ -119,7 +119,6 @@ class ChallengeSite(Generic[T], ABC):
 		assert isinstance(user, SiteUser) and user.assert_integrity()
 		embed = Embed()
 		embed.set_author(name="Profile " + self.site_name, icon_url=self.avatar_url, url=self.get_user_url(user))
-		embed.set_thumbnail(url=f"https://www.root-me.org/IMG/logo/auton{user.rm_id}.png")
 		embed.colour = self.site_color
 		user.fill_embed_fields(embed)
 		return embed

@@ -2,6 +2,7 @@ import json
 from asyncio import AbstractEventLoop
 
 import requests
+from discord import Embed
 
 from extensions.challenge_sites import ChallengeSite
 from log import error
@@ -29,6 +30,11 @@ class LeetCodeSite(ChallengeSite[LeetCodeUser]):
 			'Referer': 'https://leetcode.com/',
 			'X-Csrftoken': self.api_key
 		}
+
+	def build_profile_embed(self, user: LeetCodeUser) -> Embed:
+		embed = super().build_profile_embed(user)
+		embed.set_thumbnail(url=user.rm_avatar)
+		return embed
 
 	def new_user_structure(self, **kwargs) -> LeetCodeUser:
 		return LeetCodeUser(**kwargs)

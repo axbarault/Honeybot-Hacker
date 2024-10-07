@@ -2,6 +2,8 @@ import json
 import re
 from asyncio import AbstractEventLoop
 
+from discord import Embed
+
 from extensions.challenge_sites import ChallengeSite
 from log import error
 from settings import SQliteSession
@@ -20,6 +22,11 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 			scheduler=scheduler
 		)
 		self.api_key = api_key
+
+	def build_profile_embed(self, user: RootMeUser) -> Embed:
+		embed = super().build_profile_embed(user)
+		embed.set_thumbnail(url=f"https://www.root-me.org/IMG/logo/auton{user.rm_id}.png")
+		return embed
 
 	def new_user_structure(self, **kwargs) -> RootMeUser:
 		return RootMeUser(**kwargs)
