@@ -111,7 +111,6 @@ class LeetCodeSite(ChallengeSite[LeetCodeUser]):
 					userProfileUserQuestionProgressV2(userSlug: $username) {
 						numAcceptedQuestions {
 							count
-							difficulty
 						}
 					}
 				}
