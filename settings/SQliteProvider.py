@@ -215,7 +215,7 @@ class SQliteSession(sqlite3.Cursor):
 
 	def get_leetcode_users(self) -> map:
 		rows = self.execute(
-			"SELECT d.d_id, d.d_name, lc.rm_name, lc.rm_pos, lc.rm_avatar, lc.rm_solved_0, lc.rm_solved_1, lc.rm_solved_2 FROM leetcode_users lc LEFT OUTER JOIN discord_users d ON d.d_id=lc.d_id ORDER BY lc.rm_pos DESC, lc.rm_solved_0 + lc.rm_solved_1 + lc.rm_solved_2 DESC").fetchall()
+			"SELECT d.d_id, d.d_name, lc.rm_name, lc.rm_pos, lc.rm_avatar, lc.rm_solved_0, lc.rm_solved_1, lc.rm_solved_2 FROM leetcode_users lc LEFT OUTER JOIN discord_users d ON d.d_id=lc.d_id ORDER BY lc.rm_pos ASC, lc.rm_solved_0 + lc.rm_solved_1 + lc.rm_solved_2 DESC").fetchall()
 		return map(lambda row: LeetCodeUser(d_id=row[0], d_name=row[1], rm_name=row[2], rm_pos=row[3], rm_avatar=row[4], rm_solved_0=row[5], rm_solved_1=row[6], rm_solved_2=row[7]), rows)
 
 	def get_leetcode_user(self, d_id: int) -> Union[None, LeetCodeUser]:
