@@ -11,6 +11,7 @@ from discord.ui import View, Select
 from extensions import SqlExtension
 from extensions.ExtensionUtils import new_session
 from extensions.challenge_sites import *
+from extensions.challenge_sites.LeetCodeSite import LeetCodeSite
 from log import error
 from settings import SQliteSession
 from structures import SiteUser
@@ -27,6 +28,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 			contributors=[]
 		)
 		self.register_extension_setting("rootme_api_key", "###")
+		self.register_extension_setting("leetcode_api_key", "###")
 		self.last_update = datetime.now()
 		self.sites = []
 
@@ -39,7 +41,8 @@ class SiteLeaderboardsExtension(SqlExtension):
 		# Init sites with client scheduler (This is not very pretty and a way to access the scheduler from elsewhere should be found)
 		self.sites: list[ChallengeSite] = [
 			NewbieContestSite(client.loop),
-			RootMeSite(self.get_extension_setting("rootme_api_key"), client.loop)
+			RootMeSite(self.get_extension_setting("rootme_api_key"), client.loop),
+			LeetCodeSite(self.get_extension_setting("leetcode_api_key"), client.loop)
 		]
 
 		# Setup database tables for all sites

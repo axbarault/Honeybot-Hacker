@@ -136,12 +136,11 @@ class ChallengeSite(Generic[T], ABC):
 			users = self.site_fns.get_users(cursor)
 		medals = {0: '🥇', 1: '🥈', 2: '🥉'}
 		return "\n".join([
-			("%s %s ─ [%s](%s) ─ %d%s" % (
+			("%s %s ─ [%s](%s) ─ %s" % (
 				(medals[i] if i in medals else f"#{i + 1}"),
 				(user.d_name or user.rm_name) if guild.get_member(user.d_id) is None else f"<@{user.d_id}>",
 				user.rm_name,
 				self.get_user_url(user),
-				user.rm_pts,
 				self.get_leaderboard_complement(user)
 			)) for i, user in enumerate(users)
 		])

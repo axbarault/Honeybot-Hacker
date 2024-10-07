@@ -30,7 +30,7 @@ class NewbieContestSite(ChallengeSite[NewbieUser]):
 		return f"Il semblerait qu'aucun compte NewbieContest ne corresponde au pseudo __**{attempt}**__..."
 
 	def get_leaderboard_complement(self, user: NewbieUser) -> str:
-		return f" (**{user.rm_kingdom}**)"
+		return f"{user.rm_pts} (**{user.rm_kingdom}**)"
 
 	async def fetch_user_data(self, into: NewbieUser):
 		if into.rm_id is None and into.rm_name is None:

@@ -4,7 +4,7 @@ import sqlite3
 from typing import Union
 
 from log import *
-from structures import NewbieUser, RootMeUser, SiteDbFunctions
+from structures import NewbieUser, RootMeUser, SiteDbFunctions, LeetCodeUser
 
 
 class SQliteConnection(sqlite3.Connection):
@@ -166,6 +166,75 @@ class SQliteSession(sqlite3.Cursor):
 		update_user=update_rootme_user,
 		get_users=get_rootme_users,
 		get_user=get_rootme_user
+	)
+
+	#############
+	# LEET CODE #
+	#############
+
+	def create_leetcode_users_table(self):
+		self.execute("""
+					CREATE TABLE IF NOT EXISTS leetcode_users(
+					d_id INT PRIMARY KEY NOT NULL,
+					rm_name TEXT NOT NULL,
+					rm_pos INT NOT NULL,
+					rm_avatar TEXT,
+					rm_solved_0 INT NOT NULL, -- easy challenges
+					rm_solved_1 INT NOT NULL, -- medium challenges
+					rm_solved_2 INT NOT NULL, -- hard challenges
+					FOREIGN KEY (d_id) REFERENCES discord_users(d_id)
+					);
+				""")
+
+	def link_leetcode_user(self, user: LeetCodeUser):
+		query = "INSERT INTO leetcode_users(d_id, rm_name, rm_pos, rm_avatar, rm_solved_0, rm_solved_1, rm_solved_2) VALUES (?, ?, ?, ?, ?, ?, ?)"
+		args = [user.d_id, user.rm_name, user.rm_pos, user.rm_avatar, user.rm_solved[0], user.rm_solved[1], user.rm_solved[2]]
+		self.execute(query, args)
+
+	def unlink_leetcode_user(self, user: LeetCodeUser):
+		query = "DELETE FROM leetcode_users WHERE d_id=?"
+		self.execute(query, [user.d_id])
+
+	def is_leetcode_linked(self, d_id: Union[int, None] = None, rm_name: Union[str, None] = None) -> int:
+		assert d_id is not None or rm_name is not None
+		# Check for discord id
+		if d_id is not None:
+			query = "SELECT COUNT(*) FROM leetcode_users WHERE d_id=?"
+			if self.execute(query, [d_id]).fetchall()[0][0] >= 1:
+				return self.LINK_DID
+		# Check for remote id
+		if rm_name is not None:
+			query = "SELECT COUNT(*) FROM leetcode_users WHERE LOWER(rm_name)=LOWER(?)"
+			if self.execute(query, [rm_name]).fetchall()[0][0] >= 1:
+				return self.LINK_RID
+		return self.LINK_NONE
+
+	def update_leetcode_user(self, user: LeetCodeUser):
+		query = "UPDATE leetcode_users SET rm_pos=?, rm_avatar=?, rm_solved_0=?, rm_solved_1=?, rm_solved_2=? WHERE d_id=?"
+		self.execute(query, [user.rm_pos, user.rm_avatar, user.rm_solved[0], user.rm_solved[1], user.rm_solved[2], user.d_id])
+
+	def get_leetcode_users(self) -> map:
+		rows = self.execute(
+			"SELECT d.d_id, d.d_name, lc.rm_name, lc.rm_pos, lc.rm_avatar, lc.rm_solved_0, lc.rm_solved_1, lc.rm_solved_2 FROM leetcode_users lc LEFT OUTER JOIN discord_users d ON d.d_id=lc.d_id ORDER BY lc.rm_pos DESC").fetchall()
+		return map(lambda row: LeetCodeUser(d_id=row[0], d_name=row[1], rm_name=row[2], rm_pos=row[3], rm_avatar=row[4], rm_solved_0=row[5], rm_solved_1=row[6], rm_solved_2=row[7]), rows)
+
+	def get_leetcode_user(self, d_id: int) -> Union[None, LeetCodeUser]:
+		rows = self.execute(
+			"SELECT d.d_id, d.d_name, lc.rm_name, lc.rm_pos, lc.rm_avatar, lc.rm_solved_0, lc.rm_solved_1, lc.rm_solved_2 FROM leetcode_users lc LEFT OUTER JOIN discord_users d ON d.d_id=lc.d_id WHERE d.d_id=?",
+			[d_id]).fetchall()
+		if len(rows) == 0:
+			return None
+		row = rows[0]
+		return LeetCodeUser(d_id=row[0], d_name=row[1], rm_name=row[2], rm_pos=row[3], rm_avatar=row[4], rm_solved_0=row[5], rm_solved_1=row[6], rm_solved_2=row[7])
+
+	LEETCODE_FUNCTION_SET = SiteDbFunctions(
+		create_tables=create_leetcode_users_table,
+		link_user=link_leetcode_user,
+		unlink_user=unlink_leetcode_user,
+		check_linked=is_leetcode_linked,
+		update_user=update_leetcode_user,
+		get_users=get_leetcode_users,
+		get_user=get_leetcode_user
 	)
 
 	def __enter__(self):

@@ -33,7 +33,7 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 		return f"Huh, je n'ai pas pu trouver de compte RootMe __**{attempt}**__... Vérifie que le pseudo entré soit complet !"
 
 	def get_leaderboard_complement(self, user: RootMeUser) -> str:
-		return f" (**{user.rm_rank}**)"
+		return f"{user.rm_pts} (**{user.rm_rank}**)"
 
 	async def fetch_user_data(self, into: RootMeUser) -> bool:
 		if into.rm_id is None:
@@ -41,7 +41,7 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 				return False  # Should never happen
 			# Sadly I don't think we can get the user ID from a username without dirty regex :(
 			page = await self.request_webpage(self.get_user_url(into))
-			print("1", page.text)
+			# print("1", page.text)
 			if page.status_code != 200:
 				return False
 			# Extract the user id from the profile image name (Other sources can be found if that one fails in the future)
@@ -58,9 +58,9 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 		url = "https://api.www.root-me.org/auteurs/%d" % into.rm_id
 		page = await self.request_webpage(url, cookies={'api_key': self.api_key})
 
-		if page.status_code == 401:
-			error("The provided RootMe API Key is not valid and returned a 401 Error")
 		if page.status_code != 200:
+			if page.status_code == 401:
+				error("The provided RootMe API Key is not valid and returned a 401 Error")
 			return False
 
 		data = json.loads(page.text)

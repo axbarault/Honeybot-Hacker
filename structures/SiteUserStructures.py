@@ -79,3 +79,28 @@ class RootMeUser(SiteUser):
 		embed.add_field(name="Points", value=str(self.rm_pts))
 		embed.add_field(name="Position", value=str(self.rm_pos) if self.rm_pos > 0 else "HC")
 		embed.add_field(name="Rang", value=self.rm_rank)
+
+
+class LeetCodeUser(SiteUser):
+
+	def __init__(self, **kwargs):
+		kwargs['rm_id'] = -1  # No account id as far as I can tell for leetcode users
+		super().__init__(**kwargs)
+		self.rm_pos = kwargs.get('rm_pos', None)
+		self.rm_avatar = kwargs.get('rm_avatar', None)
+		self.rm_solved = [
+			kwargs.get('rm_solved_0', None),
+			kwargs.get('rm_solved_1', None),
+			kwargs.get('rm_solved_2', None),
+		]
+
+	def assert_integrity(self) -> bool:
+		assert self.d_id is not None and self.d_name is not None and self.rm_name is not None and None not in self.rm_solved
+		return True
+
+	def fill_embed_fields(self, embed: Embed):
+		super().fill_embed_fields(embed)
+		embed.add_field(name="Position", value=str(self.rm_pos))
+		embed.add_field(name="// Facile", value=str(self.rm_solved[0]))
+		embed.add_field(name="// Moyen", value=str(self.rm_solved[1]))
+		embed.add_field(name="// Difficile", value=str(self.rm_solved[2]))
