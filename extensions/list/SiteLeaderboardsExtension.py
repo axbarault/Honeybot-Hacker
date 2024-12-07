@@ -39,6 +39,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 
 	async def on_load(self, client: Bot):
 		# Init sites with client scheduler (This is not very pretty and a way to access the scheduler from elsewhere should be found)
+		await super().on_load(client)
 		self.sites: list[ChallengeSite] = [
 			NewbieContestSite(client.loop),
 			RootMeSite(self.get_extension_setting("rootme_api_key"), client.loop),

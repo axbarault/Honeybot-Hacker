@@ -28,6 +28,7 @@ class BaseExtension(ABC):
 		self.description = description
 		self.author = author
 		self.contributors = contributors
+		self.client = None
 
 	@abstractmethod
 	async def on_load(self, client: Bot):
@@ -35,7 +36,7 @@ class BaseExtension(ABC):
 		Called when the extension is loaded and applied to the bot instance
 		:param client: The bot instance
 		"""
-		pass
+		self.client = client
 
 	@final
 	async def help(self, origin: Message, cmd_name: str):

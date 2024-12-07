@@ -23,6 +23,7 @@ class UtilitiesExtension(BaseExtension):
 		self.register_extension_setting('help.unknown_color', '0xBC0000')
 
 	async def on_load(self, client: Bot):
+		await super().on_load(client)
 		self.avatar_url = client.user.avatar.url
 		# Commands
 		await self.register_command(

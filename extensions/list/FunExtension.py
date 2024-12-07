@@ -23,6 +23,7 @@ class FunExtension(BaseExtension):
 		)
 
 	async def on_load(self, client: Bot):
+		await super().on_load(client)
 		await self.register_command(
 			name="motd",
 			description="Y a qu'en essayant que tu comprendras",

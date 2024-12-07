@@ -184,3 +184,6 @@ fabric.properties
 # idea folder, uncomment if you don't need it
 .idea
 v1
+resources/config.json
+resources/members.db
+tests/LeetCodeGraphQLFetchingTests.py

@@ -32,8 +32,9 @@ class VerificationExtension(SqlExtension):
 		return self.verif_channel is not None and self.verif_role is not None
 
 	async def on_load(self, client: Bot):
+		await super().on_load(client)
 		self.avatar_url = client.user.avatar.url
-		# The listener is added because a welcome message is still sent in the case where the verif channel is set up but not the verif role
+		# The listener is added because a welcome message is still sent if the verif channel is set up but not the verif role
 		client.add_listener(self.on_member_join)
 		self.set_default_config()
 		# Try to set up a verification channel. The extension won't work if the config isn't properly defined
