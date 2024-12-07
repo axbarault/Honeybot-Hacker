@@ -160,6 +160,9 @@ class RolesSelectionExtension(BaseExtension):
 			await origin.reply(f"### Rôles activés ({len(roles)}):\n\t" + "\n\t".join(roles), allowed_mentions=self.allowed_mentions_obj)
 
 	async def role_message_interact(self, origin: Message, args: list[str]):
+		if len(self.get_roles(origin.guild)) == 0:
+			await origin.reply("Aucun rôle n'a été configuré pour **%s** !" % origin.guild.name)
+			return
 		await origin.reply(embed=self._create_roles_embed(), view=RolePickView(self, origin.author))
 
 	def _create_roles_embed(self) -> Embed:
