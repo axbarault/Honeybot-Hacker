@@ -13,12 +13,13 @@ De nombreux projets d'extension sont à prévoir pour le futur. Tous les modules
 
 Actuellement, le bot propose les modules suivants :
 
-| Nom du module    | Description                                                                                                                                                          |
-|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Verification     | Système de vérification des nouveaux membres demandant l'acceptation des règles du serveur                                                                           |
-| Utilities        | Contient de nombreuses commandes utiles (e.i. Pages d'aides générées automatiquement, liens aux réseaux sociaux, descriptions de channels et/ou d'utilisateurs, ...) |
-| SiteLeaderboards | Établie un classement interne du serveur sur divers sites de challenges. Implémente des commandes pour lier un profile et voir les détails de celui-ci               |
-| Fun              | Ajoute diverses commandes pas vraiment utiles mais très amusantes                                                                                                    |
+| Nom du module                   | Description                                                                                                                                                          |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Verification                    | Système de vérification des nouveaux membres demandant l'acceptation des règles du serveur                                                                           |
+| Utilities                       | Contient de nombreuses commandes utiles (e.i. Pages d'aides générées automatiquement, liens aux réseaux sociaux, descriptions de channels et/ou d'utilisateurs, ...) |
+| SiteLeaderboards                | Établie un classement interne du serveur sur divers sites de challenges. Implémente des commandes pour lier un profile et voir les détails de celui-ci               |
+| Fun                             | Ajoute diverses commandes pas vraiment utiles mais très amusantes                                                                                                    |
+| Sélection de rôles              | Permet aux utilisateurs de sélectionner les rôles qui les intéressent parmis une liste prédéfinie                                                                                                    |
 
 Pour en apprendre davantage sur les extensions et les commandes, tout est accessible depuis le bot via la commande $help.
 
