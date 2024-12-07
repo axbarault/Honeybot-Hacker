@@ -110,7 +110,7 @@ class RolesSelectionExtension(BaseExtension):
 			await origin.reply("Tu n'as pas le droit d'utiliser cette commande !")
 			return
 		
-		if len(args) < 3 or not args[0].isnumeric() or len(args[1]) > 1:
+		if len(args) < 3 or not args[0].isnumeric():
 			await self.help(origin, "enablerole")
 			return
 		
