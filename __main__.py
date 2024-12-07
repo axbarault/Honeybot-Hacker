@@ -13,6 +13,7 @@ active_extensions = [
 	UtilitiesExtension,
 	SiteLeaderboardsExtension,
 	FunExtension,
+	RolesSelectionExtension
 ]
 
 if __name__ == "__main__":
