@@ -232,7 +232,7 @@ class RolePickView(View):
 	def __init__(self, ext: RolesSelectionExtension, author: Member):
 		self.ext = ext
 		self.author_id = author.id
-		super().__init__(timeout=120)
+		super().__init__(timeout=None)
 		
 		roles = ext.get_roles(author.guild)
 		if len(roles) > 25:
