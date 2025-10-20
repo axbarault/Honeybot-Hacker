@@ -1,5 +1,6 @@
 import json
 import re
+import urllib
 from asyncio import AbstractEventLoop
 
 from discord import Embed
@@ -23,6 +24,9 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 		)
 		self.api_key = api_key
 
+	def preprocess_username(self, username: str) -> str:
+		return username.replace(" ", "-")
+
 	def build_profile_embed(self, user: RootMeUser) -> Embed:
 		embed = super().build_profile_embed(user)
 		embed.set_thumbnail(url=f"https://www.root-me.org/IMG/logo/auton{user.rm_id}.png")
@@ -32,7 +36,7 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 		return RootMeUser(**kwargs)
 
 	def get_user_url(self, user: RootMeUser) -> str:
-		return "https://root-me.org/%s" % user.rm_name
+		return "https://root-me.org/%s" % urllib.parse.quote_plus(self.preprocess_username(user.rm_name))
 
 	def get_failed_fetch_message(self, attempt: str) -> str:
 		if attempt.isnumeric():
@@ -44,35 +48,38 @@ class RootMeSite(ChallengeSite[RootMeUser]):
 
 	async def fetch_user_data(self, into: RootMeUser) -> bool:
 		if into.rm_id is None:
-			if into.rm_name is None:
-				return False  # Should never happen
-			# Sadly I don't think we can get the user ID from a username without dirty regex :(
-			page = await self.request_webpage(self.get_user_url(into))
-			# print("1", page.text)
-			if page.status_code != 200:
-				return False
-			# Extract the user id from the profile image name (Other sources can be found if that one fails in the future)
-			# DOESN'T WORK WHEN THE USER DOESN'T HAVE A CUSTOM PROFILE IMAGE
-			# id_search = re.findall(rf"IMG/logo/auton(\d+).png.*alt=\"\b{into.rm_name}\b\"", page.text, re.IGNORECASE)
+			if False:  # This does not work anymore as regular profile endpoints are protected 
+				if into.rm_name is None:
+					return False  # Should never happen
+				# Sadly I don't think we can get the user ID from a username without dirty regex :(
+				page = await self.request_webpage(self.get_user_url(into))
+				print(page.text)
+				if not page.ok:
+					return False
+				# Extract the user id from the profile image name (Other sources can be found if that one fails in the future)
+				# DOESN'T WORK WHEN THE USER DOESN'T HAVE A CUSTOM PROFILE IMAGE
+				# id_search = re.findall(rf"IMG/logo/auton(\d+).png.*alt=\"\b{into.rm_name}\b\"", page.text, re.IGNORECASE)
 
-			# Extract the user id from the leaderboard's link title (For some reason it's set to be the user ID, which is nice for us)
-			id_search = re.findall(rf"<td><a href=\"\b{into.rm_name}\b.*title=\"(\d+)\">", page.text, re.IGNORECASE)
-			if len(id_search) == 0:
-				return False
-			into.rm_id = int(id_search[0])
+				# Extract the user id from the leaderboard's link title (For some reason it's set to be the user ID, which is nice for us)
+				id_search = re.findall(rf"<td><a href=\"\b{self.preprocess_username(into.rm_name)}\b.*title=\"(\d+)\">", page.text, re.IGNORECASE)
+				if len(id_search) == 0:
+					return False
+				into.rm_id = int(id_search[0])
+			
+			return False, "Le lien doit être réalisé depuis ton [UID de compte](https://www.root-me.org/?page=preferences), parce que RootMe est pas gentil et ne me laisse pas faire autrement..."
 
 		# Nice API, no need for dirty regex, yaayay happy :)
 		url = "https://api.www.root-me.org/auteurs/%d" % into.rm_id
 		page = await self.request_webpage(url, cookies={'api_key': self.api_key})
-
-		if page.status_code != 200:
+		
+		if not page.ok:
 			if page.status_code == 401:
 				error("The provided RootMe API Key is not valid and returned a 401 Error")
-			return False
+			return False, "Nom d'un petit bonhomme, j'ai bien l'impression de m'être fait Rate Limit sur Root-Me... (HTTP Code: %d)" % page.status_code
 
 		data = json.loads(page.text)
-		if isinstance(data, list):
-			return False
+		if not isinstance(data, dict):
+			return False, "Oh, je n'ai pas reçu les infos dans le format que j'attendais..."
 
 		into.rm_name, into.rm_pts, into.rm_pos, into.rm_rank, into.rm_challs = data["nom"], data["score"], data["position"], data["rang"], len(data["validations"])
 		return True

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from asyncio import AbstractEventLoop
 from datetime import datetime
-from typing import TypeVar, Generic, Union
+from typing import Tuple, TypeVar, Generic, Union
 
 import requests
 from discord import Embed, Guild
@@ -45,7 +45,7 @@ class ChallengeSite(Generic[T], ABC):
 		pass
 
 	@abstractmethod
-	async def fetch_user_data(self, into: T) -> bool:
+	async def fetch_user_data(self, into: T) -> Union[bool, Tuple[bool, str]]:
 		"""
 		Fetch user data from the website or its API
 		:param into: User structure into witch to fill the parsed information

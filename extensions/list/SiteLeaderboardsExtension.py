@@ -12,7 +12,7 @@ from extensions import SqlExtension
 from extensions.ExtensionUtils import new_session
 from extensions.challenge_sites import *
 from extensions.challenge_sites.LeetCodeSite import LeetCodeSite
-from log import error
+from log import error, info
 from settings import SQliteSession
 from structures import SiteUser
 
@@ -128,7 +128,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 			await origin.reply(f"Hmmm... Aucun site ne correspond à ``{args[0].lower()}``. Essaye plutôt un de ceux là: **" + supported_names + "**")
 			return
 		# Create a new partially filled user structure
-		attempt = " ".join(args[1:])
+		attempt = " ".join(args[1:]).strip()
 		user: SiteUser = site.new_user_structure(
 			d_id=d_id,
 			d_name=origin.author.display_name,
@@ -141,8 +141,11 @@ class SiteLeaderboardsExtension(SqlExtension):
 			return
 		# Fetch user data from the website
 		fetch_result = await site.fetch_user_data(user)
-		if not fetch_result:
-			await origin.reply(site.get_failed_fetch_message(attempt))
+		if not isinstance(fetch_result, tuple):
+			fetch_result = fetch_result, None
+		if not fetch_result[0]:
+			emojis = ["💀", "⚠️", "‼️", "🤬"]
+			await origin.reply(emojis[random.randint(0, len(emojis) - 1)] + " " + (fetch_result[1] or site.get_failed_fetch_message(attempt)))
 			return
 		# Try to proceed with the linking phase
 		code = await site.link_account(user)
@@ -293,18 +296,29 @@ class SiteLeaderboardsExtension(SqlExtension):
 	@tasks.loop(minutes=240)
 	async def refresh_all(self):
 		"""
-		Refresh database information
+		Refresh database information for all sites.
 		"""
-		for site in self.sites:
+		async def refresh_site(site):
 			with new_session() as cursor:
 				users = site.site_fns.get_users(cursor)
+
 			for user in users:
-				if not await site.fetch_user_data(user):
-					error("Failed to update %s's %s profile. Current data : %s" % (user.rm_name, site.site_name, str(user.__dict__)))
-					continue
-				with new_session() as cursor:
-					site.site_fns.update_user(cursor, user)
-				await asyncio.sleep(5)
+				result = await site.fetch_user_data(user)
+				if not isinstance(result, tuple):
+					result = result, 
+
+				if not result[0]:
+					error(f"Failed to update {user.rm_name}'s {site.site_name} profile. Current data: {user.__dict__}. Yield: {result}")
+				else:
+					with new_session() as cursor:
+						site.site_fns.update_user(cursor, user)
+					info(f"Synced {user.rm_name}'s {site.site_name} profile.")
+
+				await asyncio.sleep(10)
+
+		# Run all site refreshes concurrently
+		await asyncio.gather(*(refresh_site(site) for site in self.sites))
+
 		self.last_update = datetime.now()
 
 

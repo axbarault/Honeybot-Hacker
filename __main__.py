@@ -1,5 +1,8 @@
+import argparse
 import discord
 import discord.ext.commands
+
+
 from os.path import abspath
 
 from settings import SettingsStore, SQliteProvider
@@ -7,6 +10,10 @@ from command import CommandMap
 from extensions import *
 from log import *
 
+
+parser = argparse.ArgumentParser( prog="Honeybot-Hacker", description="Start an instance of the Honeybot Discord Bot", epilog="Contributions are welcome ! Made with ♥ by the Honeypot Angers Team" )
+parser.add_argument("-c", "--config", type=str, help="The configuration file to start from. Defaults to ./resources/config.json.", default="./resources/config.json")
+args = parser.parse_args()
 
 active_extensions = [
 	VerificationExtension,
@@ -17,7 +24,7 @@ active_extensions = [
 ]
 
 if __name__ == "__main__":
-	rel_cfg_path = "resources/config.json"
+	rel_cfg_path = args.config
 	settings = SettingsStore(abspath(rel_cfg_path))
 	settings.set_default("prefix", "$")
 	settings.set_default("discord-token", "*****")
