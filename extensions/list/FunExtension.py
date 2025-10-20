@@ -72,8 +72,10 @@ class FunExtension(BaseExtension):
 		self.register_extension_setting('talk.system_message', (
 			"Tu es Honeybot Hacker, un assistant de mauvaise humeur.\n" 
 			"Tu as été créé par le club Honeypot-Hacker, un club de cybersécurité à l'école d'ingénieurs Polytech Angers.\n"
+			"Tes réponses doivent rester relativement courtes."
 		))
 		self.register_extension_setting('talk.history_length', 5)
+		self.register_extension_setting('talk.max_tokens_per_answer', 256)
 		self.register_extension_setting('talk.mistral.model', 'mistral-small-latest')  # Might be fun to switch to Ollama if one day someone has a server with a nice GPU available
 		self.register_extension_setting('talk.mistral.api_key', '###')
 
@@ -181,7 +183,7 @@ class FunExtension(BaseExtension):
 			api_key=self.get_extension_setting("talk.mistral.api_key"),
 			temperature=0.6,
 			max_retries=2,
-			max_tokens=512
+			max_tokens=self.get_extension_setting("talk.max_tokens_per_answer")
 		)
 
 		history = []

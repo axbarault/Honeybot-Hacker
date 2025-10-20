@@ -45,7 +45,26 @@ if __name__ == "__main__":
 	async def on_message(message: discord.Message):
 		if message.author.id == bot.user.id or message.author.bot:
 			return
+
 		args = message.content.split(" ")
+		mention_prefixes = (f"<@{bot.user.id}>", f"<@!{bot.user.id}>")
+		starts_with_mention = message.content.startswith(mention_prefixes)
+
+		is_reply_to_bot = False
+		if message.reference and isinstance(message.reference.resolved, discord.Message):
+			replied_msg = message.reference.resolved
+			if replied_msg.author.id == bot.user.id:
+				is_reply_to_bot = True
+
+		if CommandMap.get_instance().command_exists("talk") and (starts_with_mention or is_reply_to_bot):
+			if is_reply_to_bot:
+				args = [
+					"Réponse à un message de l'assistant. Message original:\n" + message.reference.resolved.clean_content + "\nRequête: ",
+					*args
+				]
+			await CommandMap.get_instance().get_command("talk").execute(message, args)
+			return
+
 		if args[0].startswith(prefix):
 			command_name = args.pop(0)[1:]
 			if CommandMap.get_instance().command_exists(command_name):
