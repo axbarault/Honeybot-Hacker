@@ -178,6 +178,9 @@ class FunExtension(BaseExtension):
 			await origin.channel.send(response.format(user=capsule_author))
 
 	async def talk(self, origin: Message, args: list[str]):
+		if len(args) == 0:
+			args.append("T'en pense quoi?")
+		
 		llm = ChatMistralAI(
 			model=self.get_extension_setting("talk.mistral.model"),
 			api_key=self.get_extension_setting("talk.mistral.api_key"),
@@ -188,6 +191,8 @@ class FunExtension(BaseExtension):
 
 		history = []
 		async for msg in origin.channel.history(limit=self.get_extension_setting("talk.history_length"), before=origin):
+			if msg.clean_content == "":
+				continue
 			if msg.author == self.client.user:
 				history.append(AIMessage(content=msg.clean_content))
 			else:
