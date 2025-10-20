@@ -1,12 +1,18 @@
 import re
 import time
+
+import httpx
+import log
+
 from random import randint
 
 from discord import Message
 from discord.ext.commands import Bot
 
-import log
 from extensions import BaseExtension
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage, ChatMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_mistralai import ChatMistralAI
 
 
 class FunExtension(BaseExtension):
@@ -55,6 +61,22 @@ class FunExtension(BaseExtension):
 		self.register_extension_setting('capsule.author', client.user.display_name)
 		self.register_extension_setting('capsule.date', int(time.time()))
 
+		# Parler a un vrai robot
+		await self.register_command(
+			name="talk",
+			description="Parler au Honeybot",
+			aliases=["parle", "psy", "dis"],
+			usage="$talk <message>",
+			handler=self.talk
+		)
+		self.register_extension_setting('talk.system_message', (
+			"Tu es Honeybot Hacker, un assistant de mauvaise humeur.\n" 
+			"Tu as été créé par le club Honeypot-Hacker, un club de cybersécurité à l'école d'ingénieurs Polytech Angers.\n"
+		))
+		self.register_extension_setting('talk.history_length', 5)
+		self.register_extension_setting('talk.mistral.model', 'mistral-small-latest')  # Might be fun to switch to Ollama if one day someone has a server with a nice GPU available
+		self.register_extension_setting('talk.mistral.api_key', '###')
+
 	async def motd(self, origin: Message, _: list[str]):
 		messages = [
 			"Salutations !", "Hello !", "Wesh wesh", "Yo", "Bien ou bien ?", "Привет!", "Guten tag!", "你好！",
@@ -70,7 +92,7 @@ class FunExtension(BaseExtension):
 			"Askip je suis sur GitHub >:D", "Jz?c!njt Quesryu ?cci hplcdn y«;ddnf", "T3VpLCBqZSBtJ2VubnV5YWlz",
 			"Y'a pas que des memes là dedans mais tout n'est pas pertinent",
 			"Il est possible que je me sois trompé de disposition de clavier à un moment",
-			"\"Il estoit, dit l’Estoile, homme tres-docte, mais vicieux\"", "Chocolatine… franchement…",
+			"\"Il estoit, dit l'Estoile, homme tres-docte, mais vicieux\"", "Chocolatine… franchement…",
 			"Quand la terreur de Belle Beille frappera-t-elle à nouveau ?",
 			"Hackerman !", "Je rêve d'une banque…", "*\"Il\"* est pertinent à sa place…",
 			"Improvise. Adapt. Overcome.", "J'adore l'eau",
@@ -78,9 +100,9 @@ class FunExtension(BaseExtension):
 			"À quelle vitesse les petits pains se vendent-ils ?",
 			"Pourquoi se fait-il que lorsqu'on demande aux gens ce qu'ils apporteraient sur une île déserte, ils ne répondent jamais «un bateau» ?",
 			"Les personnes avec un bégaiement bégayent-elles aussi dans leurs pensées ?",
-			"Pourquoi «séparé» s’écrit-il tout ensemble alors que «tout ensemble» s’écrit séparé ?"
-			"Un aveugle qui prédit l’avenir, est-ce qu’on appelle ça un voyant non-voyant ?",
-			"Si un astronaute commet un crime dans l’espace, est-ce que c’est un crime sans gravité ?",
+			"Pourquoi «séparé» s'écrit-il tout ensemble alors que «tout ensemble» s'écrit séparé ?"
+			"Un aveugle qui prédit l'avenir, est-ce qu'on appelle ça un voyant non-voyant ?",
+			"Si un astronaute commet un crime dans l'espace, est-ce que c'est un crime sans gravité ?",
 			"Si tu manges des Pépitos après minuit, est-ce tu manges des Pépitards ?"
 		]
 		rnd = randint(0, len(messages) - 1)
@@ -152,3 +174,29 @@ class FunExtension(BaseExtension):
 				log.info("New Bottled Message. Content: '{}'  |  Author : '{}'".format(capsule_cnt, origin.author.name))
 
 			await origin.channel.send(response.format(user=capsule_author))
+
+	async def talk(self, origin: Message, args: list[str]):
+		llm = ChatMistralAI(
+			model=self.get_extension_setting("talk.mistral.model"),
+			api_key=self.get_extension_setting("talk.mistral.api_key"),
+			temperature=0.6,
+			max_retries=2,
+			max_tokens=512
+		)
+
+		history = []
+		async for msg in origin.channel.history(limit=self.get_extension_setting("talk.history_length"), before=origin):
+			if msg.author == self.client.user:
+				history.append(AIMessage(content=msg.clean_content))
+			else:
+				history.append(HumanMessage(content=f"Envoyé par **{msg.author.display_name}**:\n{msg.clean_content}"))
+
+		history = history[::-1]
+		history.insert(0, SystemMessage(content=self.get_extension_setting("talk.system_message")))
+		history.append(HumanMessage(content=" ".join(args)))
+
+		try:
+			answer = await llm.ainvoke(history)
+			await origin.reply(answer.content)
+		except httpx.HTTPStatusError as e:
+			await origin.reply("Bahahah, j'ai essayé d'utiliser mes neurones, mais à la place j'ai reçu ça, la honte...\n\n```elixir\n" + str(e) + "\n```")
