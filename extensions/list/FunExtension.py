@@ -178,32 +178,32 @@ class FunExtension(BaseExtension):
 			await origin.channel.send(response.format(user=capsule_author))
 
 	async def talk(self, origin: Message, args: list[str]):
-		if len(args) == 0:
-			args.append("T'en pense quoi?")
-		
-		llm = ChatMistralAI(
-			model=self.get_extension_setting("talk.mistral.model"),
-			api_key=self.get_extension_setting("talk.mistral.api_key"),
-			temperature=0.6,
-			max_retries=2,
-			max_tokens=self.get_extension_setting("talk.max_tokens_per_answer")
-		)
+		if len(args) == 0 or all(not x for x in args):
+			args = ["T'en pense quoi?"]
+		async with origin.channel.typing():
+			llm = ChatMistralAI(
+				model=self.get_extension_setting("talk.mistral.model"),
+				api_key=self.get_extension_setting("talk.mistral.api_key"),
+				temperature=0.6,
+				max_retries=2,
+				max_tokens=self.get_extension_setting("talk.max_tokens_per_answer")
+			)
 
-		history = []
-		async for msg in origin.channel.history(limit=self.get_extension_setting("talk.history_length"), before=origin):
-			if msg.clean_content == "":
-				continue
-			if msg.author == self.client.user:
-				history.append(AIMessage(content=msg.clean_content))
-			else:
-				history.append(HumanMessage(content=f"Envoyé par **{msg.author.display_name}**:\n{msg.clean_content}"))
+			history = []
+			async for msg in origin.channel.history(limit=self.get_extension_setting("talk.history_length"), before=origin):
+				if msg.clean_content == "":
+					continue
+				if msg.author == self.client.user:
+					history.append(AIMessage(content=msg.clean_content))
+				else:
+					history.append(HumanMessage(content=f"Envoyé par **{msg.author.display_name}**:\n{msg.clean_content}"))
 
-		history = history[::-1]
-		history.insert(0, SystemMessage(content=self.get_extension_setting("talk.system_message")))
-		history.append(HumanMessage(content=" ".join(args)))
+			history = history[::-1]
+			history.insert(0, SystemMessage(content=self.get_extension_setting("talk.system_message")))
+			history.append(HumanMessage(content=" ".join(args)))
 
-		try:
-			answer = await llm.ainvoke(history)
-			await origin.reply(answer.content)
-		except httpx.HTTPStatusError as e:
-			await origin.reply("Bahahah, j'ai essayé d'utiliser mes neurones, mais à la place j'ai reçu ça, la honte...\n\n```elixir\n" + str(e) + "\n```")
+			try:
+				answer = await llm.ainvoke(history)
+				await origin.reply(answer.content)
+			except httpx.HTTPStatusError as e:
+				await origin.reply("Bahahah, j'ai essayé d'utiliser mes neurones, mais à la place j'ai reçu ça, la honte...\n\n```elixir\n" + str(e) + "\n```")
