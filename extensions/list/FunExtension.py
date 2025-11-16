@@ -146,20 +146,21 @@ class FunExtension(BaseExtension):
 			await origin.reply("Eh bé petit t'es pompette? Y a tchi d'mal dans ce qu'il a dit!")
 		
 	async def no(self, origin: Message, args: list[str]):
-		res = requests.get(self.get_extension_setting('no.endpoint'))
-		if not res.ok:
-			reason = self.get_extension_setting('no.fallback')
-		else:
-			j = res.json()
-			if not "reason" in j:
+		async with origin.channel.typing():
+			res = requests.get(self.get_extension_setting('no.endpoint'))
+			if not res.ok:
 				reason = self.get_extension_setting('no.fallback')
 			else:
-				reason = j['reason']
-		if origin.reference is not None and origin.author != self.client:
-			target = await origin.channel.fetch_message(origin.reference.message_id)
-			await target.reply(reason)
-		else:
-			await origin.reply(reason)
+				j = res.json()
+				if not "reason" in j:
+					reason = self.get_extension_setting('no.fallback')
+				else:
+					reason = j['reason']
+			if origin.reference is not None and origin.author != self.client:
+				target = await origin.channel.fetch_message(origin.reference.message_id)
+				await target.reply(reason)
+			else:
+				await origin.reply(reason)
 
 	async def capsule(self, origin: Message, args: list[str]):
 		if args.__len__() == 0:
