@@ -2,6 +2,7 @@ import re
 import time
 
 import httpx
+import requests
 import log
 
 from random import randint
@@ -60,6 +61,17 @@ class FunExtension(BaseExtension):
 		self.register_extension_setting('capsule.message', 'Si vous lisez ceci, c\'est que je suis mort...')
 		self.register_extension_setting('capsule.author', client.user.display_name)
 		self.register_extension_setting('capsule.date', int(time.time()))
+
+		# No factory
+		await self.register_command(
+			name="no",
+			description="Décliner poliment une proposition",
+			aliases=['non'],
+			usage="$no",
+			handler=self.no
+		)
+		self.register_extension_setting('no.endpoint', 'https://naas.isalman.dev/no')
+		self.register_extension_setting('no.fallback', "J'ai essayé de le dire de manière distinguée, mais pour faire court, **non**")
 
 		# Parler a un vrai robot
 		await self.register_command(
@@ -132,6 +144,22 @@ class FunExtension(BaseExtension):
 		# If zero occurrence and someone was trying to PAIN AU CHOCOLAT someone else, make fun of them
 		if count == 0 and target != origin:
 			await origin.reply("Eh bé petit t'es pompette? Y a tchi d'mal dans ce qu'il a dit!")
+		
+	async def no(self, origin: Message, args: list[str]):
+		res = requests.get(self.get_extension_setting('no.endpoint'))
+		if not res.ok:
+			reason = self.get_extension_setting('no.fallback')
+		else:
+			j = res.json()
+			if not "reason" in j:
+				reason = self.get_extension_setting('no.fallback')
+			else:
+				reason = j['reason']
+		if origin.reference is not None and origin.author != self.client:
+			target = await origin.channel.fetch_message(origin.reference.message_id)
+			await target.reply(reason)
+		else:
+			await origin.reply(reason)
 
 	async def capsule(self, origin: Message, args: list[str]):
 		if args.__len__() == 0:
