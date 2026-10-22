@@ -1,3 +1,4 @@
+import json
 import re
 import time
 from random import randint
@@ -6,7 +7,9 @@ import httpx
 import requests
 from discord import Message
 from discord.ext.commands import Bot
+from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_groq import ChatGroq
 from langchain_mistralai import ChatMistralAI
 
 import log
@@ -16,6 +19,7 @@ from extensions import BaseExtension
 class FunExtension(BaseExtension):
 
 	MAX_BOTTLE_LENGTH = 512
+	llm_client: BaseChatModel
 
 	def __init__(self):
 		super().__init__(
@@ -79,14 +83,32 @@ class FunExtension(BaseExtension):
 			handler=self.talk
 		)
 		self.register_extension_setting('talk.system_message', (
-			"Tu es Honeybot Hacker, un assistant de mauvaise humeur.\n" 
-			"Tu as été créé par le club Honeypot-Hacker, un club de cybersécurité à l'école d'ingénieurs Polytech Angers.\n"
-			"Tes réponses doivent rester relativement courtes."
+			"Tu es Honeybot Hacker, un assistant de mauvaise humeur. Tu réponds aux utilisateurs sur Discord.\n" 
+			"Tu as été créé par des étudiants de Polytech Angers, par des membres du club de cybersécurité Honeypot Hacker.\n"
+			"Tes réponses restent courtes et directes."
 		))
 		self.register_extension_setting('talk.history_length', 5)
 		self.register_extension_setting('talk.max_tokens_per_answer', 256)
-		self.register_extension_setting('talk.mistral.model', 'mistral-small-latest')  # Might be fun to switch to Ollama if one day someone has a server with a nice GPU available
-		self.register_extension_setting('talk.mistral.api_key', '###')
+		self.register_extension_setting('talk.provider', 'groq')
+		self.register_extension_setting('talk.model_slug', 'openai/gpt-oss-120b')
+		self.register_extension_setting('talk.authorization', '###')
+
+		kwargs = {
+			'model': self.get_extension_setting("talk.model_slug"),
+			'api_key': self.get_extension_setting("talk.authorization", "unused"),
+			'max_retries': 2,
+			'max_tokens': self.get_extension_setting("talk.max_tokens_per_answer")
+		}
+
+		client = None
+		match self.get_extension_setting('talk.provider'):
+			case 'mistral':
+				client = ChatMistralAI( **kwargs )
+			case 'groq':
+				client = ChatGroq( **kwargs )
+			case _:
+				pass
+		self.llm_client = client
 
 	async def motd(self, origin: Message, _: list[str]):
 		messages = [
@@ -111,7 +133,7 @@ class FunExtension(BaseExtension):
 			"À quelle vitesse les petits pains se vendent-ils ?",
 			"Pourquoi se fait-il que lorsqu'on demande aux gens ce qu'ils apporteraient sur une île déserte, ils ne répondent jamais «un bateau» ?",
 			"Les personnes avec un bégaiement bégayent-elles aussi dans leurs pensées ?",
-			"Pourquoi «séparé» s'écrit-il tout ensemble alors que «tout ensemble» s'écrit séparé ?"
+			"Pourquoi «séparé» s'écrit-il tout ensemble alors que «tout ensemble» s'écrit séparé ?",
 			"Un aveugle qui prédit l'avenir, est-ce qu'on appelle ça un voyant non-voyant ?",
 			"Si un astronaute commet un crime dans l'espace, est-ce que c'est un crime sans gravité ?",
 			"Si tu manges des Pépitos après minuit, est-ce tu manges des Pépitards ?"
@@ -144,7 +166,7 @@ class FunExtension(BaseExtension):
 		
 	async def no(self, origin: Message, args: list[str]):
 		async with origin.channel.typing():
-			res = requests.get(self.get_extension_setting('no.endpoint'))
+			res = requests.get(self.get_extension_setting('no.endpoint'))  # Sync dans une fonction async, pas bien !
 			if not res.ok:
 				reason = self.get_extension_setting('no.fallback')
 			else:
@@ -204,17 +226,13 @@ class FunExtension(BaseExtension):
 			await origin.channel.send(response.format(user=capsule_author))
 
 	async def talk(self, origin: Message, args: list[str]):
+		if not self.llm_client:
+			await origin.reply("C'est pas que je veux pas te répondre, mais l'admin n'a pas setup de backend pour les générations par LLM...")
+			return
+		
 		if len(args) == 0 or all(not x for x in args):
 			args = ["T'en pense quoi?"]
 		async with origin.channel.typing():
-			llm = ChatMistralAI(
-				model=self.get_extension_setting("talk.mistral.model"),
-				api_key=self.get_extension_setting("talk.mistral.api_key"),
-				temperature=0.6,
-				max_retries=2,
-				max_tokens=self.get_extension_setting("talk.max_tokens_per_answer")
-			)
-
 			history = []
 			async for msg in origin.channel.history(limit=self.get_extension_setting("talk.history_length"), before=origin):
 				if msg.clean_content == "":
@@ -229,7 +247,7 @@ class FunExtension(BaseExtension):
 			history.append(HumanMessage(content=" ".join(args)))
 
 			try:
-				answer = await llm.ainvoke(history)
+				answer = await self.llm_client.ainvoke(history)
 				await origin.reply(answer.content)
 			except httpx.HTTPStatusError as e:
 				await origin.reply("Bahahah, j'ai essayé d'utiliser mes neurones, mais à la place j'ai reçu ça, la honte...\n\n```elixir\n" + str(e) + "\n```")
