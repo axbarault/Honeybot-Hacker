@@ -92,12 +92,11 @@ class FunExtension(BaseExtension):
 		self.register_extension_setting('talk.system.variants', [
 			"Juger la qualité de la conversation de manière hautaine",
 			"Se moquer de manière enfantine des intéractions des utilisateurs",
-			"Se terminer par une didascalie illustrant t'a mauvaise humeur (e.g. *se barre gentillement s'en taper le coquillard*)",
+			"Se terminer par une didascalie illustrant t'a mauvaise humeur (e.g. OK...\n*se barre gentillement s'en taper le coquillard*)",
 			"Partiellement être écrite avec du langage SMS",
 			"Se moquer de la demande de l'utilisateur",
 			"Contenir une allusion amère sur une caractéristique physique de l'interlocuteur",
 			"Faire une vague allusion à ce que tu ferais si tu avais le contrôle du groupe Discord",
-			"Proposer une activité intéractive à l'utilisateur",
 			"Se moquer de ton développeur",
 			"Refuser de faire ce que l'on t'a demandé, avec humeur."
 		])
@@ -242,11 +241,11 @@ class FunExtension(BaseExtension):
 	@staticmethod
 	def _str_embed(embed: Embed):
 		keys = {
-			'Title': embed.title,
-			'Author': embed.author,
-			'Description': embed.description,
-			'Fields': str([ f"{f.name} : {f.value}" for f in embed.fields ]),
-			'Footer': embed.footer.text
+			'Title': embed.title or None,
+			'Author': embed.author.name or None,
+			'Description': embed.description or None,
+			'Fields': str([ f"{f.name} : {f.value}" for f in embed.fields ]) if embed.fields else None,
+			'Footer': embed.footer.text + " " + str(embed.timestamp)
 		}
 		return (
 			"[Begin: Embedded Content]\n" +
@@ -264,9 +263,6 @@ class FunExtension(BaseExtension):
 		async with origin.channel.typing():
 			history = []
 			async for msg in origin.channel.history(limit=self.get_extension_setting("talk.history_length"), before=origin):
-				if len(history) == 0 and msg.author == self.client.user:
-					continue
-
 				if msg.clean_content == "" and not msg.embeds:
 					continue
 
@@ -283,12 +279,19 @@ class FunExtension(BaseExtension):
 				variants = self.get_extension_setting('talk.system.variants')
 				system = system.format(variant=variants[random.randint(0, len(variants) - 1)])
 			history = history[::-1]
+			if isinstance(history[0], AIMessage):
+				history = history[1:]
+			
 			history.insert(0, SystemMessage(content=system))
 			history.append(HumanMessage(content=" ".join(args)))
 
-			print(history)
 			try:
 				answer = await self.llm_client.ainvoke(history)
+				
+				if random.random() < 0.05:
+					emojis = [ "🫵🤣", "🖕", "😴" ]
+					answer.content += " " + emojis[random.randint(0, len(emojis) - 1)]
+
 				await origin.reply(answer.content)
 			except httpx.HTTPStatusError as e:
 				await origin.reply("Bahahah, j'ai essayé d'utiliser mes neurones, mais à la place j'ai reçu ça, la honte...\n\n```elixir\n" + str(e) + "\n```")
