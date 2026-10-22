@@ -245,11 +245,11 @@ class FunExtension(BaseExtension):
 			'Author': embed.author.name or None,
 			'Description': embed.description or None,
 			'Fields': str([ f"{f.name} : {f.value}" for f in embed.fields ]) if embed.fields else None,
-			'Footer': embed.footer.text + " " + str(embed.timestamp)
+			'Footer': ((embed.footer.text or "") + " " + str(embed.timestamp or "")).strip()
 		}
 		return (
 			"[Begin: Embedded Content]\n" +
-			"\n".join(f"{key}: {val}" for key, val in keys.items()) +
+			"\n".join(f"{key}: {val}" for key, val in keys.items() if val is not None) +
 			"\n[End: Embedded Content]"
 		)
 
