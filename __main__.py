@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
 		args = message.content.split(" ")
 		mention_prefixes = (f"<@{bot.user.id}>", f"<@!{bot.user.id}>")
-		starts_with_mention = message.content.startswith(mention_prefixes)
+		contains_mention = any(p in message.content for p in mention_prefixes)
 
 		is_reply_to_bot = False
 		if message.reference and isinstance(message.reference.resolved, discord.Message):
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 			if replied_msg.author.id == bot.user.id:
 				is_reply_to_bot = True
 
-		if CommandMap.get_instance().command_exists("talk") and (starts_with_mention or is_reply_to_bot):
+		if CommandMap.get_instance().command_exists("talk") and (contains_mention or is_reply_to_bot):
 			if is_reply_to_bot:
 				args = [
 					"Réponse à un message de l'assistant. Message original:\n" + message.reference.resolved.clean_content + "\nRequête: ",

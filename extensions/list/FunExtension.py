@@ -1,11 +1,12 @@
 import json
+import random
 import re
 import time
 from random import randint
 
 import httpx
 import requests
-from discord import Message
+from discord import Embed, Message
 from discord.ext.commands import Bot
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -85,10 +86,23 @@ class FunExtension(BaseExtension):
 		self.register_extension_setting('talk.system_message', (
 			"Tu es Honeybot Hacker, un assistant de mauvaise humeur. Tu réponds aux utilisateurs sur Discord.\n" 
 			"Tu as été créé par des étudiants de Polytech Angers, par des membres du club de cybersécurité Honeypot Hacker.\n"
-			"Tes réponses restent courtes et directes."
+			"Tes réponses restent courtes et directes. Tu utilises toujours une tournure un peu désagréable, comme si tu es dérangé et que la conversation ne t'intérèsse pas.\n"
+			"Ta réponse doit {variant}"
 		))
+		self.register_extension_setting('talk.system.variants', [
+			"Juger la qualité de la conversation de manière hautaine",
+			"Se moquer de manière enfantine des intéractions des utilisateurs",
+			"Se terminer par une didascalie illustrant t'a mauvaise humeur (e.g. *se barre gentillement s'en taper le coquillard*)",
+			"Partiellement être écrite avec du langage SMS",
+			"Se moquer de la demande de l'utilisateur",
+			"Contenir une allusion amère sur une caractéristique physique de l'interlocuteur",
+			"Faire une vague allusion à ce que tu ferais si tu avais le contrôle du groupe Discord",
+			"Proposer une activité intéractive à l'utilisateur",
+			"Se moquer de ton développeur",
+			"Refuser de faire ce que l'on t'a demandé, avec humeur."
+		])
 		self.register_extension_setting('talk.history_length', 5)
-		self.register_extension_setting('talk.max_tokens_per_answer', 256)
+		self.register_extension_setting('talk.max_tokens_per_answer', 2048)
 		self.register_extension_setting('talk.provider', 'groq')
 		self.register_extension_setting('talk.model_slug', 'openai/gpt-oss-120b')
 		self.register_extension_setting('talk.authorization', '###')
@@ -225,6 +239,21 @@ class FunExtension(BaseExtension):
 
 			await origin.channel.send(response.format(user=capsule_author))
 
+	@staticmethod
+	def _str_embed(embed: Embed):
+		keys = {
+			'Title': embed.title,
+			'Author': embed.author,
+			'Description': embed.description,
+			'Fields': str([ f"{f.name} : {f.value}" for f in embed.fields ]),
+			'Footer': embed.footer.text
+		}
+		return (
+			"[Begin: Embedded Content]\n" +
+			"\n".join(f"{key}: {val}" for key, val in keys.items()) +
+			"\n[End: Embedded Content]"
+		)
+
 	async def talk(self, origin: Message, args: list[str]):
 		if not self.llm_client:
 			await origin.reply("C'est pas que je veux pas te répondre, mais l'admin n'a pas setup de backend pour les générations par LLM...")
@@ -235,17 +264,29 @@ class FunExtension(BaseExtension):
 		async with origin.channel.typing():
 			history = []
 			async for msg in origin.channel.history(limit=self.get_extension_setting("talk.history_length"), before=origin):
-				if msg.clean_content == "":
+				if len(history) == 0 and msg.author == self.client.user:
 					continue
-				if msg.author == self.client.user:
-					history.append(AIMessage(content=msg.clean_content))
-				else:
-					history.append(HumanMessage(content=f"Envoyé par **{msg.author.display_name}**:\n{msg.clean_content}"))
 
+				if msg.clean_content == "" and not msg.embeds:
+					continue
+
+				embeds_cnt = "\n".join(FunExtension._str_embed(e) for e in msg.embeds) if msg.embeds else ""
+				cnt = embeds_cnt + "\n" + msg.clean_content
+
+				if msg.author == self.client.user:
+					history.append(AIMessage(content=cnt))
+				else:
+					history.append(HumanMessage(content=f"[Sender: {msg.author.display_name}]\n{msg.clean_content}\n\n"))
+
+			system = self.get_extension_setting("talk.system_message")
+			if "{variant}" in system:
+				variants = self.get_extension_setting('talk.system.variants')
+				system = system.format(variant=variants[random.randint(0, len(variants) - 1)])
 			history = history[::-1]
-			history.insert(0, SystemMessage(content=self.get_extension_setting("talk.system_message")))
+			history.insert(0, SystemMessage(content=system))
 			history.append(HumanMessage(content=" ".join(args)))
 
+			print(history)
 			try:
 				answer = await self.llm_client.ainvoke(history)
 				await origin.reply(answer.content)
