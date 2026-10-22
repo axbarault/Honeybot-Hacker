@@ -49,7 +49,7 @@ class NewbieContestSite(ChallengeSite[NewbieUser]):
 			into.rm_id = int(regex_result[0])
 
 		# Fetch the user profile page and use more bad regex to extract useful data
-		page = await self.request_webpage(f"https://www.newbiecontest.org/index.php?page=info_membre&id=%d" % into.rm_id)
+		page = await self.request_webpage("https://www.newbiecontest.org/index.php?page=info_membre&id=%d" % into.rm_id)
 		name_regex = re.findall(r"Informations sur.*>\s*(.+?)(?:&nbsp|</span></a>)", page.text)
 		pts_regex = re.findall(r"Points :.*>\s*(\d+)", page.text)
 		pos_regex = re.findall(r"Position :.*>\s*(\d+)", page.text)

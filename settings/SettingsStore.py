@@ -1,7 +1,7 @@
 import json
 import os
+from os import R_OK, W_OK, access
 from os.path import exists
-from os import access, R_OK, W_OK
 from typing import Any
 
 

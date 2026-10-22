@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from asyncio import AbstractEventLoop
 from datetime import datetime
-from typing import Tuple, TypeVar, Generic, Union
+from typing import Generic, TypeVar
 
 import requests
 from discord import Embed, Guild
@@ -42,16 +42,14 @@ class ChallengeSite(Generic[T], ABC):
 		:param kwargs: Keyword arguments to be passed to the structure
 		:return: A user structure initialized with **kwargs
 		"""
-		pass
 
 	@abstractmethod
-	async def fetch_user_data(self, into: T) -> Union[bool, Tuple[bool, str]]:
+	async def fetch_user_data(self, into: T) -> bool | tuple[bool, str]:
 		"""
 		Fetch user data from the website or its API
 		:param into: User structure into witch to fill the parsed information
 		:return: True on success, False on failure (if the user doesn't exist for example)
 		"""
-		pass
 
 	@abstractmethod
 	def get_user_url(self, user: T) -> str:
@@ -60,7 +58,6 @@ class ChallengeSite(Generic[T], ABC):
 		:param user: The user to get a URL to
 		:return: URL
 		"""
-		pass
 
 	@abstractmethod
 	def get_failed_fetch_message(self, attempt: str) -> str:
@@ -69,9 +66,8 @@ class ChallengeSite(Generic[T], ABC):
 		:param attempt: The user input
 		:return: The message to be displayed
 		"""
-		pass
 
-	async def request_webpage(self, url: str, cookies: Union[dict, None] = None) -> requests.Response:
+	async def request_webpage(self, url: str, cookies: dict | None = None) -> requests.Response:
 		return await self.scheduler.run_in_executor(None, lambda: requests.get(url, cookies=cookies))
 
 	async def link_account(self, user: T) -> int:
@@ -128,7 +124,6 @@ class ChallengeSite(Generic[T], ABC):
 		"""
 		Get additional leaderboard information about a user
 		"""
-		pass
 
 	def build_leaderboard(self, guild: Guild) -> str:
 		with new_session() as cursor:

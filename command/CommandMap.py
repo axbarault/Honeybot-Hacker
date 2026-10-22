@@ -1,5 +1,5 @@
+
 from command import Command
-from typing import Union
 
 
 class CommandMap:
@@ -36,7 +36,7 @@ class CommandMap:
 		low = name.lower()
 		return low in self._commands or low in self._aliases
 
-	def get_command(self, name: str) -> Union[None, Command]:
+	def get_command(self, name: str) -> None | Command:
 		if not self.command_exists(name):
 			return None
 		return self._aliases[name.lower()]

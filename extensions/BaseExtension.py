@@ -5,15 +5,16 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 	from extensions import UtilitiesExtension
 
+from abc import ABC, abstractmethod
+from asyncio import AbstractEventLoop
+from collections.abc import Callable, Coroutine
+from typing import Any, final
+
 from discord import Message
 from discord.ext.commands import Bot
 
-from asyncio import AbstractEventLoop
-from abc import ABC, abstractmethod
-from typing import Any, Union, Callable, Coroutine, final
-
-from extensions.ExtensionStore import ExtensionStore
 from command import Command, CommandMap
+from extensions.ExtensionStore import ExtensionStore
 from settings import SettingsStore
 
 
@@ -79,7 +80,7 @@ class BaseExtension(ABC):
 		settings: SettingsStore = SettingsStore.get_instance()
 		return settings.set(self.get_extension_field(field), value)
 
-	async def register_command(self, name: str, description: str, aliases: list[str], usage: Union[str, None], handler: Callable[[Message, list[str], Command], Coroutine]):
+	async def register_command(self, name: str, description: str, aliases: list[str], usage: str | None, handler: Callable[[Message, list[str], Command], Coroutine]):
 		commandObj = Command(name, self.display_name, description, aliases, usage, handler)
 		CommandMap.get_instance().register_command(commandObj)
 		self._commands.append(commandObj)

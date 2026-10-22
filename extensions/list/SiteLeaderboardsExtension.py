@@ -1,17 +1,18 @@
 import asyncio
 import random
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, Union, Any
+from typing import Any
 
-from discord import Message, Embed, SelectOption, Interaction, Guild
+from discord import Embed, Guild, Interaction, Message, SelectOption
 from discord.ext import tasks
 from discord.ext.commands import Bot
-from discord.ui import View, Select
+from discord.ui import Select, View
 
 from extensions import SqlExtension
-from extensions.ExtensionUtils import new_session
 from extensions.challenge_sites import *
 from extensions.challenge_sites.LeetCodeSite import LeetCodeSite
+from extensions.ExtensionUtils import new_session
 from log import error, info
 from settings import SQliteSession
 from structures import SiteUser
@@ -99,7 +100,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 			return site_linked == SQliteSession.LINK_NONE
 		return self.filter_sites(_)
 
-	def site_from_alias(self, alias: str) -> Union[ChallengeSite, None]:
+	def site_from_alias(self, alias: str) -> ChallengeSite | None:
 		for site in self.sites:
 			if alias.lower() in site.aliases:
 				return site
@@ -137,7 +138,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 		)
 		# Check that we have at least an id or a name to work with (The following condition should never be True, but we never know)
 		if user.rm_id is None and user.rm_name is None:
-			await origin.reply(f"Uh oh... Une erreur qui n'est vraiment pas censée se passer vient d'apparaître. Prévient un admin pour qu'on fixe le problème 😱")
+			await origin.reply("Uh oh... Une erreur qui n'est vraiment pas censée se passer vient d'apparaître. Prévient un admin pour qu'on fixe le problème 😱")
 			return
 		# Fetch user data from the website
 		fetch_result = await site.fetch_user_data(user)
@@ -153,7 +154,7 @@ class SiteLeaderboardsExtension(SqlExtension):
 			await origin.reply(f"Ah... Ton compte Discord est déjà lié à un profile sur ce site. Exécute ``$uln {site.aliases[0]}`` et retente après.")
 			return
 		if code == site.ERR_LINK_RID:
-			await origin.reply(f"Eheh, petit malin, ce profile est déjà lié à un autre compte Discord. Si c'est bien le tiens, contact un admin. Sinon, bien tenté, mais non ^^")
+			await origin.reply("Eheh, petit malin, ce profile est déjà lié à un autre compte Discord. Si c'est bien le tiens, contact un admin. Sinon, bien tenté, mais non ^^")
 			return
 		emojis = ["💯", "🎉", "🥳", "💪", "🍭"]
 		await origin.reply(f"Parfait {emojis[random.randint(0, len(emojis) - 1)]} Ton compte {site.site_name} a été lié à Discord:", embed=site.build_profile_embed(user))
@@ -336,7 +337,7 @@ class SiteSelect(Select):
 
 class SiteSelectView(View):
 
-	def __init__(self, sites: list[ChallengeSite], author_id: int, handler: Callable, default_site: Union[ChallengeSite, None] = None):
+	def __init__(self, sites: list[ChallengeSite], author_id: int, handler: Callable, default_site: ChallengeSite | None = None):
 		super().__init__(timeout=None)
 		self.author_id = author_id
 		self.add_item(SiteSelect(

@@ -1,16 +1,15 @@
-from os import access, R_OK, W_OK
-from os.path import exists
 import sqlite3
-from typing import Union
+from os import R_OK, W_OK, access
+from os.path import exists
 
 from log import *
-from structures import NewbieUser, RootMeUser, SiteDbFunctions, LeetCodeUser
+from structures import LeetCodeUser, NewbieUser, RootMeUser, SiteDbFunctions
 
 
 class SQliteConnection(sqlite3.Connection):
 
 	def cursor(self, cursorClass: type | None = ...) -> sqlite3.Cursor:
-		return super(SQliteConnection, self).cursor(SQliteSession)
+		return super().cursor(SQliteSession)
 
 
 class SQliteSession(sqlite3.Cursor):
@@ -63,7 +62,7 @@ class SQliteSession(sqlite3.Cursor):
 		query = "DELETE FROM newbie_users WHERE d_id=?"
 		self.execute(query, [user.d_id])
 
-	def is_newbie_linked(self, d_id: Union[int, None] = None, rm_id: Union[int, None] = None) -> int:
+	def is_newbie_linked(self, d_id: int | None = None, rm_id: int | None = None) -> int:
 		assert d_id is not None or rm_id is not None
 		# Check for discord id
 		if d_id is not None:
@@ -85,7 +84,7 @@ class SQliteSession(sqlite3.Cursor):
 		rows = self.execute("SELECT d.d_id, d.d_name, n.rm_id, n.rm_name, n.rm_pts, n.rm_pos FROM newbie_users n LEFT OUTER JOIN discord_users d ON d.d_id=n.d_id ORDER BY n.rm_pts DESC").fetchall()
 		return map(lambda row: NewbieUser(d_id=row[0], d_name=row[1], rm_id=row[2], rm_name=row[3], rm_pts=row[4], rm_pos=row[5]), rows)
 
-	def get_newbie_user(self, d_id: int) -> Union[None, NewbieUser]:
+	def get_newbie_user(self, d_id: int) -> None | NewbieUser:
 		rows = self.execute("SELECT d.d_id, d.d_name, n.rm_id, n.rm_name, n.rm_pts, n.rm_pos FROM newbie_users n LEFT OUTER JOIN discord_users d ON d.d_id=n.d_id WHERE d.d_id=?", [d_id]).fetchall()
 		if len(rows) == 0:
 			return None
@@ -129,7 +128,7 @@ class SQliteSession(sqlite3.Cursor):
 		query = "DELETE FROM rootme_users WHERE d_id=?"
 		self.execute(query, [user.d_id])
 
-	def is_rootme_linked(self, d_id: Union[int, None] = None, rm_id: Union[int, None] = None) -> int:
+	def is_rootme_linked(self, d_id: int | None = None, rm_id: int | None = None) -> int:
 		assert d_id is not None or rm_id is not None
 		# Check for discord id
 		if d_id is not None:
@@ -151,7 +150,7 @@ class SQliteSession(sqlite3.Cursor):
 		rows = self.execute("SELECT d.d_id, d.d_name, rm.rm_id, rm.rm_name, rm.rm_pts, rm.rm_challs, rm.rm_pos, rm.rm_rank FROM rootme_users rm LEFT OUTER JOIN discord_users d ON d.d_id=rm.d_id ORDER BY rm.rm_pts DESC").fetchall()
 		return map(lambda row: RootMeUser(d_id=row[0], d_name=row[1], rm_id=row[2], rm_name=row[3], rm_pts=row[4], rm_challs=row[5], rm_pos=row[6], rm_rank=row[7]), rows)
 
-	def get_rootme_user(self, d_id: int) -> Union[None, RootMeUser]:
+	def get_rootme_user(self, d_id: int) -> None | RootMeUser:
 		rows = self.execute("SELECT d.d_id, d.d_name, rm.rm_id, rm.rm_name, rm.rm_pts, rm.rm_challs, rm.rm_pos, rm.rm_rank FROM rootme_users rm LEFT OUTER JOIN discord_users d ON d.d_id=rm.d_id WHERE d.d_id=?", [d_id]).fetchall()
 		if len(rows) == 0:
 			return None
@@ -195,7 +194,7 @@ class SQliteSession(sqlite3.Cursor):
 		query = "DELETE FROM leetcode_users WHERE d_id=?"
 		self.execute(query, [user.d_id])
 
-	def is_leetcode_linked(self, d_id: Union[int, None] = None, rm_name: Union[str, None] = None) -> int:
+	def is_leetcode_linked(self, d_id: int | None = None, rm_name: str | None = None) -> int:
 		assert d_id is not None or rm_name is not None
 		# Check for discord id
 		if d_id is not None:
@@ -218,7 +217,7 @@ class SQliteSession(sqlite3.Cursor):
 			"SELECT d.d_id, d.d_name, lc.rm_name, lc.rm_pos, lc.rm_avatar, lc.rm_solved_0, lc.rm_solved_1, lc.rm_solved_2 FROM leetcode_users lc LEFT OUTER JOIN discord_users d ON d.d_id=lc.d_id ORDER BY lc.rm_pos ASC, lc.rm_solved_0 + lc.rm_solved_1 + lc.rm_solved_2 DESC").fetchall()
 		return map(lambda row: LeetCodeUser(d_id=row[0], d_name=row[1], rm_name=row[2], rm_pos=row[3], rm_avatar=row[4], rm_solved_0=row[5], rm_solved_1=row[6], rm_solved_2=row[7]), rows)
 
-	def get_leetcode_user(self, d_id: int) -> Union[None, LeetCodeUser]:
+	def get_leetcode_user(self, d_id: int) -> None | LeetCodeUser:
 		rows = self.execute(
 			"SELECT d.d_id, d.d_name, lc.rm_name, lc.rm_pos, lc.rm_avatar, lc.rm_solved_0, lc.rm_solved_1, lc.rm_solved_2 FROM leetcode_users lc LEFT OUTER JOIN discord_users d ON d.d_id=lc.d_id WHERE d.d_id=?",
 			[d_id]).fetchall()

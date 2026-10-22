@@ -1,5 +1,5 @@
 from .FunExtension import FunExtension
+from .RolesSelectionExtension import RolesSelectionExtension
 from .SiteLeaderboardsExtension import SiteLeaderboardsExtension
 from .UtilitiesExtension import UtilitiesExtension
 from .VerificationExtension import VerificationExtension
-from .RolesSelectionExtension import RolesSelectionExtension

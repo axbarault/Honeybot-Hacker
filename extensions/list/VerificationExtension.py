@@ -1,11 +1,11 @@
-from typing import Any, Union
+from typing import Any
 
 import discord.errors
-from discord.ui import View, Button
-from discord.errors import NotFound, Forbidden
-from discord.utils import get
+from discord import ButtonStyle, Embed, Interaction, Member, Message, Role, TextChannel
+from discord.errors import Forbidden, NotFound
 from discord.ext.commands import Bot
-from discord import TextChannel, Role, Embed, ButtonStyle, Interaction, Message, Member
+from discord.ui import Button, View
+from discord.utils import get
 
 from extensions import SqlExtension
 from extensions.ExtensionUtils import new_session
@@ -23,9 +23,9 @@ class VerificationExtension(SqlExtension):
 			contributors=[]
 		)
 		self.avatar_url = ""
-		self.verif_msg: Union[Message, None] = None
-		self.verif_channel: Union[TextChannel, None] = None
-		self.verif_role: Union[Role, None] = None
+		self.verif_msg: Message | None = None
+		self.verif_channel: TextChannel | None = None
+		self.verif_role: Role | None = None
 		self.setup_tables()
 
 	def is_extension_enabled(self) -> bool:

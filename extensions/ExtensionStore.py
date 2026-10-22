@@ -1,10 +1,11 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
 	from extensions import BaseExtension
 
-from typing import Union
+
 from log import info
 
 
@@ -35,7 +36,7 @@ class ExtensionStore:
 	def extension_exists(self, name: str) -> bool:
 		return name.lower() in self._extensions
 
-	def get_extension(self, name: str) -> Union[None, BaseExtension]:
+	def get_extension(self, name: str) -> None | BaseExtension:
 		if not self.extension_exists(name):
 			return None
 		return self._extensions[name.lower()]

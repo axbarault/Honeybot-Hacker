@@ -1,11 +1,11 @@
-from typing import Callable, Union
+from collections.abc import Callable, Coroutine
+
 from discord import Message
-from typing import Coroutine
 
 
 class Command:
 
-	def __init__(self, name: str, extension: str, description: str, aliases: list[str], usage: Union[str, None], handler: Callable[[Message, list[str]], Coroutine]):
+	def __init__(self, name: str, extension: str, description: str, aliases: list[str], usage: str | None, handler: Callable[[Message, list[str]], Coroutine]):
 		"""
 		:param name: Command name
 		:param extension: Nom de l'extension propriétaire de cette commande
@@ -33,7 +33,7 @@ class Command:
 	def get_aliases(self) -> list[str]:
 		return self._aliases
 
-	def get_usage(self) -> Union[str, None]:
+	def get_usage(self) -> str | None:
 		return self._usage
 
 	def get_handler(self) -> Callable[[Message, list[str]], Coroutine]:

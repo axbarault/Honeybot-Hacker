@@ -1,9 +1,9 @@
-from discord import Message, Embed
+from discord import Embed, Message
 from discord.ext.commands import Bot
 
-from settings import SettingsStore
-from command import CommandMap, Command
+from command import Command, CommandMap
 from extensions import BaseExtension, ExtensionStore
+from settings import SettingsStore
 
 
 class UtilitiesExtension(BaseExtension):

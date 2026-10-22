@@ -18,7 +18,7 @@ def get_date_header():
 
 
 def log(log_type: str, message: str, color: str = ""):
-	print("{}{} [{: <8}] {}{}".format(color, get_date_header(), log_type, message, LogColors.ENDC))
+	print(f"{color}{get_date_header()} [{log_type: <8}] {message}{LogColors.ENDC}")
 
 
 def warn(message):

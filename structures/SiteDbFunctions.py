@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import Callable, Any, TypeVar, Generic, TYPE_CHECKING, Union, Iterable
+
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 if TYPE_CHECKING:
 	from settings import SQliteSession
@@ -18,10 +20,10 @@ class SiteDbFunctions(Generic[T]):
 			create_tables: Callable[[SQliteSession], Any],
 			link_user: Callable[[SQliteSession, T], Any],
 			unlink_user: Callable[[SQliteSession, T], Any],
-			check_linked: Callable[[SQliteSession, Union[int, None], ...], int],
+			check_linked: Callable[[SQliteSession, int | None, ...], int],
 			update_user: Callable[[SQliteSession, T], Any],
 			get_users: Callable[[SQliteSession], Iterable[T]],
-			get_user: Callable[[SQliteSession, int], Union[None, T]]
+			get_user: Callable[[SQliteSession, int], None | T]
 	):
 		self.create_tables = create_tables
 		self.link_user = link_user

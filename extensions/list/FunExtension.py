@@ -1,19 +1,16 @@
 import re
 import time
+from random import randint
 
 import httpx
 import requests
-import log
-
-from random import randint
-
 from discord import Message
 from discord.ext.commands import Bot
-
-from extensions import BaseExtension
-from langchain_core.messages import SystemMessage, AIMessage, HumanMessage, ChatMessage
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_mistralai import ChatMistralAI
+
+import log
+from extensions import BaseExtension
 
 
 class FunExtension(BaseExtension):

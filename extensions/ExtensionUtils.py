@@ -1,6 +1,6 @@
-from asyncio import sleep, create_task
+from asyncio import create_task, sleep
 
-from settings import SQliteSession, SQliteProvider
+from settings import SQliteProvider, SQliteSession
 
 
 def new_session() -> SQliteSession:

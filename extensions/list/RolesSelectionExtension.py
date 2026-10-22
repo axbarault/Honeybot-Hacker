@@ -1,7 +1,17 @@
-from typing import Union
-from discord import AllowedMentions, Client, Embed, Forbidden, Guild, Interaction, Message, Role, SelectOption, Member
+from discord import (
+	AllowedMentions,
+	Client,
+	Embed,
+	Forbidden,
+	Guild,
+	Interaction,
+	Member,
+	Message,
+	Role,
+	SelectOption,
+)
+from discord.ui import Select, View
 from discord.utils import get
-from discord.ui import View, Select, Button
 
 from extensions import BaseExtension
 from log import *
